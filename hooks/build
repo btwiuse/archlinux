@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+echo "------ HOOK START - BUILD -------"
+printenv
+
+apt install -y net-tools
+
+docker images
+
+whoami
+
+pwd
+
+df -h
+
+ls -la
+
+git status
+
+lscpu
+
+lsblk
+
+mount
+
+free -h
+
+ifconfig -a
+
+# sudo make rootfs
+
+sudo modprobe ext4
+# sudo docker build --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=$SOURCE_COMMIT -t $IMAGE_NAME .
+
+sudo docker run -it -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged latestarch/linux:latest make rootfs
+docker build -t $IMAGE_NAME .
+
+echo "------ HOOK END - BUILD -------"
