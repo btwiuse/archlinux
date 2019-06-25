@@ -4,13 +4,6 @@ docker tag $IMAGE_NAME $DOCKER_REPO:$SOURCE_COMMIT
 docker push $DOCKER_REPO:$SOURCE_COMMIT
 docker push $DOCKER_REPO:latest
 
-docker run -v /etc:/etc $IMAGE_NAME tgbot \
-  "image pushed; build log:" \
-  "https://cloud.docker.com/repository/registry-1.docker.io/latestarch/linux/builds" \
-  "" \
-  "Give it a try!" \
-  "docker run latestarch/linux:latest"
-
 echo "------ HOOK END - POST_PUSH -------"
 
 # trigger another build, causing an infinite autobuild loop
