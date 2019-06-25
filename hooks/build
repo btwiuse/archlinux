@@ -30,9 +30,13 @@ ifconfig -a
 # sudo make rootfs
 
 sudo modprobe ext4
-# sudo docker build --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=$SOURCE_COMMIT -t $IMAGE_NAME .
 
-sudo docker run -it -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged latestarch/linux:latest make rootfs
-docker build -t $IMAGE_NAME .
+if [[ -d /var/cache/pacman/pkg ]]; then
+  sudo docker run -it -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+else
+  sudo docker run -it -v $PWD:$PWD -w $PWD --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+fi
+
+sudo docker build -t ${IMAGE_NAME:-latestarchlinux} .
 
 echo "------ HOOK END - BUILD -------"
