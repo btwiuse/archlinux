@@ -41,6 +41,9 @@ fi
 
 $sudo modprobe ext4 || :
 
+# docker pull index.docker.io/latestarch/linux:latest
+$sudo docker pull ${IMAGE_NAME:-latestarch/linux} || :
+
 if [[ -d /var/cache/pacman/pkg ]]; then
   $sudo docker run -v $PWD:$PWD -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
 else
