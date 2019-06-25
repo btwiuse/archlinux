@@ -20,6 +20,8 @@ lscpu
 
 lsblk
 
+lsmod
+
 mount
 
 free -h
@@ -37,7 +39,7 @@ if [[ $(whoami) = root ]]; then
   sudo=""
 fi
 
-$sudo modprobe ext4
+$sudo modprobe ext4 || :
 
 if [[ -d /var/cache/pacman/pkg ]]; then
   $sudo docker run -it -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
