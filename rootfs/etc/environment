@@ -1,0 +1,6 @@
+# https://askubuntu.com/questions/162391/how-do-i-fix-my-locale-issue
+LC_ALL=en_US.UTF-8
+LANG=en_US.UTF-8
+
+# make htop colorful, default is vt220
+TERM=xterm
