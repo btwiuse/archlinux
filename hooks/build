@@ -42,9 +42,9 @@ fi
 $sudo modprobe ext4 || :
 
 if [[ -d /var/cache/pacman/pkg ]]; then
-  $sudo docker run -it -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+  $sudo docker run -v $PWD:$PWD -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
 else
-  $sudo docker run -it -v $PWD:$PWD -w $PWD --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+  $sudo docker run -v $PWD:$PWD -w $PWD --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
 fi
 
 $sudo docker build -t ${IMAGE_NAME:-latestarch/linux} .
