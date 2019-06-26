@@ -6,6 +6,7 @@ git
 gzip
 htop
 linux-headers
+neofetch
 net-tools
 openssh
 pacman
