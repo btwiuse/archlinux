@@ -1,4 +1,5 @@
 arch-install-scripts
+axel
 base
 base-devel
 docker
@@ -17,3 +18,4 @@ systemd
 tmux
 vim
 devtools
+wget
