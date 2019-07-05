@@ -10,6 +10,7 @@ rootfs:
 	arch-chroot $(TMPDIR) pacman-key --init
 	arch-chroot $(TMPDIR) pacman-key --populate archlinux
 	arch-chroot $(TMPDIR) mkinitcpio -p linux
+	arch-chroot $(TMPDIR) pkgfile --update
 	tar --numeric-owner --xattrs --acls --exclude-from=exclude -C $(TMPDIR) -c . -f archlinux.tar
 	rm -rf $(TMPDIR)
 
