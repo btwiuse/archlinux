@@ -23,3 +23,5 @@ pkgfile
 fzf
 bat
 yajl
+jq
+yq
