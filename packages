@@ -20,3 +20,5 @@ vim
 devtools
 wget
 pkgfile
+fzf
+bat
