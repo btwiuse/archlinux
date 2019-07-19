@@ -2,6 +2,10 @@
 
 echo "------ HOOK START - BUILD -------"
 
+getenforce
+
+cat /proc/cmdline
+
 printenv
 
 docker images

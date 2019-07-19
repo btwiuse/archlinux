@@ -3,8 +3,6 @@ DOCKER_ORGANIZATION=archlinux
 DOCKER_IMAGE:=base
 
 rootfs:
-	getenforce || true
-	cat /proc/cmdline
 	$(eval TMPDIR := $(shell mktemp -d))
 	cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* $(TMPDIR)/
 	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
