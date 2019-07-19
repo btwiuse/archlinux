@@ -30,13 +30,13 @@ ifconfig -a
 
 # sudo make rootfs
 
-if ! which sudo; then
-  apt update && apt install -y sudo || :
-fi
-
 sudo=sudo
 if [[ $(whoami) = root ]]; then
   sudo=""
+# else
+# if ! which sudo; then
+#   apt update && apt install -y sudo || :
+# fi
 fi
 
 $sudo modprobe ext4 || :
