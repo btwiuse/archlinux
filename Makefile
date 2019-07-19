@@ -5,7 +5,7 @@ DOCKER_IMAGE:=base
 rootfs:
 	$(eval TMPDIR := $(shell mktemp -d))
 	getenforce || true
-        cat /proc/cmdline
+	cat /proc/cmdline
 	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
 	cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* $(TMPDIR)/
 	cp -v pkg/* $(TMPDIR)/root/
