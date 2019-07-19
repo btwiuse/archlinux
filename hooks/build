@@ -31,7 +31,7 @@ ifconfig -a
 # sudo make rootfs
 
 if ! which sudo; then
-  apt install -y sudo || :
+  apt update && apt install -y sudo || :
 fi
 
 sudo=sudo
