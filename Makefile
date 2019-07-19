@@ -10,6 +10,9 @@ rootfs:
 	cp -v pkg/*.pkg.tar.xz $(TMPDIR)/root/
 	mount --bind $(TMPDIR) $(TMPDIR)
 	arch-chroot $(TMPDIR) bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm)'
+	arch-chroot $(TMPDIR) bash -c 'useradd -U -ms /bin/bash -G wheel,docker star && echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers'
+	# fakeroot is broken in docker, resort to pacman -U for now
+	# arch-chroot -u star $(TMPDIR) bash -c 'yaourt -Syu --noconfirm libselinux yay'
 	arch-chroot $(TMPDIR) getenforce
 	arch-chroot $(TMPDIR) locale-gen
 	arch-chroot $(TMPDIR) pacman-key --init
