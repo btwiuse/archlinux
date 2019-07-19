@@ -25,3 +25,4 @@ bat
 yajl
 jq
 yq
+strace
