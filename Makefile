@@ -3,11 +3,11 @@ DOCKER_ORGANIZATION=archlinux
 DOCKER_IMAGE:=base
 
 rootfs:
-	$(eval TMPDIR := $(shell mktemp -d))
 	getenforce || true
 	cat /proc/cmdline
-	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
+	$(eval TMPDIR := $(shell mktemp -d))
 	cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* $(TMPDIR)/
+	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
 	cp -v pkg/* $(TMPDIR)/root/
 	mount --bind $(TMPDIR) $(TMPDIR)
 	arch-chroot $(TMPDIR) bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm)'
