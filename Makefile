@@ -6,7 +6,8 @@ rootfs:
 	$(eval TMPDIR := $(shell mktemp -d))
 	cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* $(TMPDIR)/
 	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
-	cp -v pkg/* $(TMPDIR)/root/
+	test -d pkg || git clone https://github.com/latestarch-org/pkg
+	cp -v pkg/*.pkg.tar.xz $(TMPDIR)/root/
 	mount --bind $(TMPDIR) $(TMPDIR)
 	arch-chroot $(TMPDIR) bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm)'
 	arch-chroot $(TMPDIR) getenforce
