@@ -7,7 +7,8 @@ rootfs:
 	env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M $(TMPDIR) $(shell cat packages)
 	cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* $(TMPDIR)/
 	cp -v pkg/* $(TMPDIR)/tmp
-	arch-chroot $(TMPDIR) bash -c 'pacman -U --noconfirm /tmp/*.pkg.tar.xz'
+	arch-chroot $(TMPDIR) bash -c 'ls -la /tmp/'
+	arch-chroot $(TMPDIR) bash -c 'ls -1 /tmp/ | grep .pkg.tar.xz | xargs pacman -U --noconfirm'
 	arch-chroot $(TMPDIR) locale-gen
 	arch-chroot $(TMPDIR) pacman-key --init
 	arch-chroot $(TMPDIR) pacman-key --populate archlinux
