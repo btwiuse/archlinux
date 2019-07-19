@@ -9,12 +9,12 @@ rootfs:
 	cp -v pkg/* $(TMPDIR)/root/
 	mount --bind $(TMPDIR) $(TMPDIR)
 	arch-chroot $(TMPDIR) bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm)'
-	umount $(TMPDIR)
 	arch-chroot $(TMPDIR) locale-gen
 	arch-chroot $(TMPDIR) pacman-key --init
 	arch-chroot $(TMPDIR) pacman-key --populate archlinux
 	arch-chroot $(TMPDIR) mkinitcpio -p linux
 	arch-chroot $(TMPDIR) pkgfile --update
+	umount $(TMPDIR)
 	tar --numeric-owner --xattrs --acls --exclude-from=exclude -C $(TMPDIR) -c . -f archlinux.tar
 	rm -rf $(TMPDIR)
 
