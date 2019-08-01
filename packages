@@ -1,3 +1,6 @@
+sshpass
+cmake
+ninja
 multilib-devel
 lib32-glibc
 aria2
