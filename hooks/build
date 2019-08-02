@@ -46,14 +46,14 @@ fi
 $sudo modprobe ext4 || :
 
 # docker pull index.docker.io/latestarch/linux:latest
-$sudo docker pull ${IMAGE_NAME:-latestarch/linux} || :
+# $sudo docker pull ${IMAGE_NAME:-latestarch/linux} || :
 
 if [[ -d /var/cache/pacman/pkg ]]; then
-  $sudo docker run -v $PWD:$PWD -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD -v /var/cache/pacman/pkg:/var/cache/pacman/pkg --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+  $sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v /var/cache/pacman/pkg:/var/cache/pacman/pkg ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
 else
-  $sudo docker run -v $PWD:$PWD -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged ${IMAGE_NAME:-latestarch/linux} make rootfs
+  $sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v $PWD/cache:/var/cache/pacman/pkg            ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
 fi
 
-$sudo docker build -t ${IMAGE_NAME:-latestarch/linux} .
+# $sudo docker build -t ${IMAGE_NAME:-latestarch/linux} .
 
 echo "------ HOOK END - BUILD -------"
