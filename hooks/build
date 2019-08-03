@@ -49,10 +49,10 @@ $sudo modprobe ext4 || :
 # $sudo docker pull ${IMAGE_NAME:-latestarch/linux} || :
 
 if [[ -d /var/cache/pacman/pkg ]]; then
-  $sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v /var/cache/pacman/pkg:/var/cache/pacman/pkg ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
-else
-  $sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v $PWD/cache:/var/cache/pacman/pkg            ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
+  PKGDIR=/var/cache/pacman/pkg
 fi
+
+$sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
 
 # $sudo docker build -t ${IMAGE_NAME:-latestarch/linux} .
 
