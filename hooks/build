@@ -46,10 +46,10 @@ update_docker_image(){
   run \
   -v $PWD:$PWD \
   -v /var/run:/var/run \
+  -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg \
   -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
   -w $PWD \
   --privileged \
-  -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg \
   ${IMAGE_NAME:-latestarch/linux} \
   ./build
 }
