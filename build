@@ -1,1 +1,42 @@
-./hooks/build
+TMPDIR=$(mktemp -d)
+
+GRP="
+wheel
+video
+audio
+vboxusers
+plugdev
+docker
+libvirt
+lxd
+podman
+"
+
+cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* ${TMPDIR}/
+env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M ${TMPDIR} $(cat packages)
+test -d pkg || git clone https://github.com/latestarch-org/pkg
+cp -v pkg/*.pkg.tar.xz ${TMPDIR}/root/
+mount --bind ${TMPDIR} ${TMPDIR}
+arch-chroot ${TMPDIR} locale-gen
+arch-chroot ${TMPDIR} pacman-key --init
+arch-chroot ${TMPDIR} pacman-key --populate archlinux
+
+arch-chroot ${TMPDIR} bash -c 'useradd -U -ms /bin/bash star'
+for group in $GRP; do
+  arch-chroot ${TMPDIR} bash -c "groupadd -f ${group}"
+  arch-chroot ${TMPDIR} bash -c "usermod -a -G ${group} star"
+done
+
+arch-chroot ${TMPDIR} bash -c 'echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers'
+
+arch-chroot ${TMPDIR} bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm --force)'
+
+# fakeroot is broken in docker, resort to pacman -U for now
+# arch-chroot -u star ${TMPDIR} bash -c 'yaourt -Syu --noconfirm libselinux yay'
+# arch-chroot ${TMPDIR} getenforce
+arch-chroot ${TMPDIR} mkinitcpio -p linux
+arch-chroot ${TMPDIR} pkgfile --update
+
+umount ${TMPDIR}
+tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import --change 'CMD ["/usr/bin/bash"]' - latestarch/linux:latest
+rm -rf ${TMPDIR}

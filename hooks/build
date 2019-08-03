@@ -1,59 +1,64 @@
 #!/usr/bin/env bash
 
-echo "------ HOOK START - BUILD -------"
+gather_info(){
+  getenforce
 
-getenforce
+  cat /proc/cmdline
 
-cat /proc/cmdline
+  printenv
 
-printenv
+  docker images
 
-docker images
+  whoami
 
-whoami
+  pwd
 
-pwd
+  df -h
 
-df -h
+  ls -la
 
-ls -la
+  git status
 
-git status
+  lscpu
 
-lscpu
+  lsblk
 
-lsblk
+  lsmod
 
-lsmod
+  mount
 
-mount
+  free -h
 
-free -h
+  ifconfig -a
+}
 
-ifconfig -a
+update_docker_image(){
+  sudo=sudo
+  if [[ $(whoami) = root ]]; then
+    sudo=""
+  fi
 
-# sudo make rootfs
+  if [[ -d /var/cache/pacman/pkg ]]; then
+    PKGDIR=/var/cache/pacman/pkg
+  fi
 
-sudo=sudo
-if [[ $(whoami) = root ]]; then
-  sudo=""
-# else
-# if ! which sudo; then
-#   apt update && apt install -y sudo || :
-# fi
-fi
+  $sudo docker \
+  run \
+  -v $PWD:$PWD \
+  -v /var/run:/var/run \
+  -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
+  -w $PWD \
+  --privileged \
+  -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg \
+  ${IMAGE_NAME:-latestarch/linux} \
+  ./build
+}
 
-$sudo modprobe ext4 || :
+main(){
+  echo "------ HOOK START - BUILD -------"
+  gather_info
+  update_docker_image
+  echo "------ HOOK END - BUILD -------"
+}
 
-# docker pull index.docker.io/latestarch/linux:latest
-# $sudo docker pull ${IMAGE_NAME:-latestarch/linux} || :
-
-if [[ -d /var/cache/pacman/pkg ]]; then
-  PKGDIR=/var/cache/pacman/pkg
-fi
-
-$sudo docker run -v $PWD:$PWD -v /var/run:/var/run -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist -w $PWD --privileged -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg ${IMAGE_NAME:-latestarch/linux} bash rootfs2docker
-
-# $sudo docker build -t ${IMAGE_NAME:-latestarch/linux} .
-
-echo "------ HOOK END - BUILD -------"
+main "$@"
