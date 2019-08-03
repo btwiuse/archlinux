@@ -4,8 +4,10 @@ env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M ${TMPDIR} $
 test -d pkg || git clone https://github.com/latestarch-org/pkg
 cp -v pkg/*.pkg.tar.xz ${TMPDIR}/root/
 mount --bind ${TMPDIR} ${TMPDIR}
+arch-chroot ${TMPDIR} bash -c 'echo wheel video audio vboxusers plugdev docker libvirt sudo lxd podman | xargs -n1 echo groupadd -f:
+arch-chroot ${TMPDIR} bash -c 'echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers'
 arch-chroot ${TMPDIR} bash -c 'ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm)'
-arch-chroot ${TMPDIR} bash -c 'useradd -U -ms /bin/bash -G wheel,docker star && echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers'
+arch-chroot ${TMPDIR} bash -c 'useradd -U -ms /bin/bash -G wheel,docker,podman star'
 # fakeroot is broken in docker, resort to pacman -U for now
 # arch-chroot -u star ${TMPDIR} bash -c 'yaourt -Syu --noconfirm libselinux yay'
 arch-chroot ${TMPDIR} getenforce
