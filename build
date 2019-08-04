@@ -23,7 +23,10 @@ arch-chroot ${TMPDIR} locale-gen
 arch-chroot ${TMPDIR} pacman-key --init
 arch-chroot ${TMPDIR} pacman-key --populate archlinux
 
+# TODO: try chpasswd
 arch-chroot ${TMPDIR} bash -c 'useradd -U -ms /bin/bash star'
+arch-chroot ${TMPDIR} bash -c 'passwd -d star'
+
 for group in $GRP; do
   arch-chroot ${TMPDIR} bash -c "groupadd -f ${group}"
   arch-chroot ${TMPDIR} bash -c "usermod -a -G ${group} star"
