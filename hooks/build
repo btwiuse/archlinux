@@ -29,7 +29,7 @@ gather_info(){
 
   free -h
 
-  ifconfig -a
+  # ifconfig -a
 }
 
 update_docker_image(){
@@ -50,7 +50,7 @@ update_docker_image(){
   -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
   -w $PWD \
   --privileged \
-  ${IMAGE_NAME:-latestarch/linux} \
+  latestarch/linux:stable \
   ./build
 }
 
