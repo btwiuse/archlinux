@@ -19,7 +19,7 @@ env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M ${TMPDIR} $
 test -d pkg || git clone https://github.com/latestarch-org/pkg
 cp -v pkg/*.pkg.tar.xz ${TMPDIR}/root/
 mount --bind ${TMPDIR} ${TMPDIR}
-arch-chroot ${TMPDIR} locale-gen
+arch-chroot ${TMPDIR} locale-gen en_US.UTF-8
 arch-chroot ${TMPDIR} bash strap.sh
 
 # TODO: try chpasswd
