@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 
+main(){
 TMPDIR=$(mktemp -d)
-
-GRP="
-wheel
-video
-audio
-vboxusers
-plugdev
-docker
-libvirt
-lxd
-podman
-"
 
 cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* ${TMPDIR}/
 env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M ${TMPDIR} $(cat packages)
@@ -27,7 +16,7 @@ cat strap.sh | arch-chroot ${TMPDIR} bash
 arch-chroot ${TMPDIR} bash -c 'useradd -U -ms /bin/bash star'
 arch-chroot ${TMPDIR} bash -c 'passwd -d star'
 
-for group in $GRP; do
+for group in $(cat groups); do
   arch-chroot ${TMPDIR} bash -c "groupadd -f ${group}"
   arch-chroot ${TMPDIR} bash -c "usermod -a -G ${group} star"
 done
@@ -45,3 +34,6 @@ arch-chroot ${TMPDIR} pkgfile --update
 umount ${TMPDIR}
 tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import --change 'CMD ["/usr/bin/bash"]' --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 TZ=Asia/Shanghai' - latestarch/linux:latest
 rm -rf ${TMPDIR}
+}
+
+main "$@"
