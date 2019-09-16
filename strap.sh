@@ -130,8 +130,11 @@ update_pacman_conf()
 
   cat >> "/etc/pacman.conf" << EOF
 [blackarch]
-Include = /etc/pacman.d/$MIRROR_F
-# Server = http://mirrors.ustc.edu.cn/blackarch/$repo/os/$arch
+# Include = /etc/pacman.d/$MIRROR_F
+EOF
+
+  cat >> "/etc/pacman.conf" << "EOF"
+Server = http://mirrors.ustc.edu.cn/blackarch/$repo/os/$arch
 EOF
 }
 
