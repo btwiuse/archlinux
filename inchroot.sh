@@ -15,5 +15,6 @@ done
 echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm --force)
-mkinitcpio -p linux
+#mkinitcpio -p linux
+sudo pacman -Syu --noconfirm --force
 pkgfile --update
