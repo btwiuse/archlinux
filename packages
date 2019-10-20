@@ -41,6 +41,8 @@ multilib-devel
 neofetch
 net-tools
 ninja
+nspr
+nss
 openssh
 p7zip
 pacman
