@@ -56,6 +56,7 @@ procps-ng
 sed
 shadowsocks-libev
 skopeo
+socat
 speedtest-cli
 sshpass
 strace
@@ -64,6 +65,7 @@ tig
 tmux
 tree
 treeify
+trojan
 ttf-dejavu
 unzip
 util-linux
