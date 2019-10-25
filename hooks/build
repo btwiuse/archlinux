@@ -50,6 +50,7 @@ update_docker_image(){
   -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
   -w $PWD \
   --privileged \
+  --net=host \
   latestarch/linux:stable \
   ./build
 }
