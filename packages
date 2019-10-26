@@ -29,11 +29,13 @@ gist
 git
 gn
 go
+go-tools
 gzip
 hostapd
 htop
 hub
 iftop
+inetutils
 iotop
 iproute2
 iptables
@@ -48,6 +50,7 @@ lld
 llvm
 lsof
 ltrace
+man
 moreutils
 multilib-devel
 neofetch
@@ -66,6 +69,7 @@ pixz
 pkgfile
 podman
 procps-ng
+pv
 sed
 shadowsocks-libev
 skopeo
@@ -75,6 +79,7 @@ sshpass
 strace
 systemd
 tig
+time
 tmux
 tree
 treeify

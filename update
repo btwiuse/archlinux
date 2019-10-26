@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+  TMP=$(mktemp | cut -d . -f 2 | tr '[:upper:]' '[:lower:]')
+  if [[ -d /var/cache/pacman/pkg ]]; then
+    PKGDIR=/var/cache/pacman/pkg
+  fi
+  
+  # stage 1
+  # update configs
+  docker create --name=$TMP latestarch/linux:stable
+  docker cp rootfs ${TMP}:
+  docker commit --change 'CMD ["/usr/bin/bash"]' $TMP $TMP
+  docker rm $TMP
+
+  # stage 2
+  # install packages
+  cat inchroot.sh | grep -v ^pacman-key | grep -v ^pkgfile | docker run -i --name=$TMP -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg -v $PWD:/root/arch -w /root/arch --privileged -u root --net=host $TMP bash -v
+  docker commit \
+  --change 'USER btwiuse' \
+  --change 'WORKDIR /home/btwiuse' \
+  --change 'CMD ["/usr/bin/bash"]' \
+  $TMP latestarch/linux:latest
+
+  # stage 3
+  # cleanup
+  docker rm $TMP
+  docker rmi $TMP

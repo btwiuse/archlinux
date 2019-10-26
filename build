@@ -3,18 +3,38 @@
 main(){
   TMPDIR=$(mktemp -d)
 
-  cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* ${TMPDIR}/
-  env -i pacstrap -c -d -G -M ${TMPDIR} $(cat packages)
+  # 0x00
+  # from scratch
+  env -i pacstrap -c -d -G -M ${TMPDIR} $(cat packages) |& ts -s '%M:%S [pacstrap]'
+
+  # 0x01
+  # custom configurations
+  cp --recursive --preserve=timestamps --backup --suffix=.pacold rootfs/* ${TMPDIR}/
+
+  # 0x02
+  # install binpkg in chroot
+  # todo: github.com/btwiuse/arch
+  # todo: archlinux-bootstrap
+  # todo: multiarch: x86, armv7, aarch64
   test -d pkg || git clone https://github.com/btwiuse/archpkg pkg
-  cp -v users groups pkg/*.pkg.tar.xz ${TMPDIR}/root/
+  cp -arpv . ${TMPDIR}/root/arch
   mount --bind ${TMPDIR} ${TMPDIR}
-
-  cat inchroot.sh | arch-chroot ${TMPDIR} bash
-# cat strap.sh | arch-chroot ${TMPDIR} env TERM=screen bash
-
+  cat inchroot.sh | arch-chroot ${TMPDIR} bash |& ts -s '%M:%S [inchroot]'
   umount ${TMPDIR}
-  tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import --change 'CMD ["/usr/bin/bash"]' --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 TZ=Asia/Shanghai' - latestarch/linux:latest
+
+  # 0x03
+  # docker import
+  /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
+  --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en TERM=screen TZ=Asia/Shanghai' \
+  --change 'USER btwiuse' \
+  --change 'WORKDIR /home/btwiuse' \
+  --change 'CMD ["/usr/bin/bash"]' \
+  - latestarch/linux:latest
+
+  # 0x04
+  # cleanup
   rm -rf ${TMPDIR}
 }
 
 main "$@"
+
