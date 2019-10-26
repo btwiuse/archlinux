@@ -10,7 +10,7 @@ main(){
   mount --bind ${TMPDIR} ${TMPDIR}
 
   cat inchroot.sh | arch-chroot ${TMPDIR} bash
-  cat strap.sh | arch-chroot ${TMPDIR} env TERM=screen bash
+# cat strap.sh | arch-chroot ${TMPDIR} env TERM=screen bash
 
   umount ${TMPDIR}
   tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import --change 'CMD ["/usr/bin/bash"]' --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 TZ=Asia/Shanghai' - latestarch/linux:latest

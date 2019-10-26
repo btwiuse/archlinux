@@ -15,9 +15,8 @@ done
 echo "%wheel ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 pacman-key --init
-pacman-key --populate archlinux
-
+pacman-key --populate archlinux archlinuxcn blackarch
 ls -1 /root/ | grep .pkg.tar.xz | (cd /root; xargs pacman -U --noconfirm --overwrite '/*')
 #mkinitcpio -p linux
-sudo pacman -Syu --noconfirm --overwrite '/*'
+#sudo pacman -Syu --noconfirm --overwrite '/*'
 pkgfile --update
