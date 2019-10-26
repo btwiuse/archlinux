@@ -10,6 +10,8 @@ broadcom-wl
 brook
 buildah
 busybox
+ccache
+clang
 cmake
 create_ap
 curl
@@ -23,6 +25,8 @@ ed
 fzf
 gist
 git
+go
+gn
 gzip
 hostapd
 htop
@@ -38,6 +42,8 @@ lib32-glibc
 libselinux
 libsepol
 linux-headers
+lld
+llvm
 lsof
 ltrace
 moreutils

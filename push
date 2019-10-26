@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
 docker login -u latestarch -p m1ss2ss3pp4
+docker tag latestarch/linux:{latest,stable}
 docker push latestarch/linux:stable
 docker push latestarch/linux:latest
