@@ -4,7 +4,7 @@ main(){
   TMPDIR=$(mktemp -d)
 
   cp --recursive --preserve=timestamps --backup --suffix=.pacnew rootfs/* ${TMPDIR}/
-  env -i pacstrap -C /usr/share/devtools/pacman-extra.conf -c -d -G -M ${TMPDIR} $(cat packages)
+  env -i pacstrap -c -d -G -M ${TMPDIR} $(cat packages)
   test -d pkg || git clone https://github.com/btwiuse/archpkg pkg
   cp -v users groups pkg/*.pkg.tar.xz ${TMPDIR}/root/
   mount --bind ${TMPDIR} ${TMPDIR}
