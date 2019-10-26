@@ -52,6 +52,7 @@ lsof
 ltrace
 man
 moreutils
+mosh
 multilib-devel
 neofetch
 net-tools
