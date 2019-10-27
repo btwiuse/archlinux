@@ -33,15 +33,15 @@ install-binpkg(){
 
 update-packages(){
 ./packages lite | xargs pacman -Syu --noconfirm --needed --overwrite '/*'
-# pkgfile --update
+  pkgfile --update
 }
 
 main(){
   gen-locale
   ug
-# setup-keyring
-# install-binpkg
-# update-packages
+  setup-keyring
+  install-binpkg
+  update-packages
 }
 
 main "$@"
