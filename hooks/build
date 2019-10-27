@@ -44,12 +44,13 @@ update_docker_image(){
 
   $sudo docker \
   run \
+  -u root \
   -v $PWD:$PWD \
+  -w $PWD \
   -v /var/run:/var/run \
   -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg \
   -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
   -v $PWD/rootfs/etc/pacman.conf:/etc/pacman.conf \
-  -w $PWD \
   --privileged \
   --net=host \
   latestarch/linux:stable \
