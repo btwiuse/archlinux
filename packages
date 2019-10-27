@@ -1,97 +1,31 @@
-arch-install-scripts
-archlinuxcn-keyring
-aria2
-axel
-base
-base-devel
-bash
-bash-completion
-bat
-blackarch-keyring
-broadcom-wl
-brook
-buildah
-busybox
-ccache
-clang
-cmake
-create_ap
-curl
-devtools
-dhcp
-distcc
-dnsmasq
-docker
-dstat
-ed
-fzf
-gist
-git
-gn
-go
-go-tools
-gzip
-hostapd
-htop
-hub
-iftop
-inetutils
-iotop
-iproute2
-iptables
-iw
-jq
-kubectl
-lib32-glibc
-libselinux
-libsepol
-linux-headers
-lld
-llvm
-lsof
-ltrace
-man
-moreutils
-mosh
-multilib-devel
-neofetch
-net-tools
-ninja
-nspr
-nss
-openssh
-p7zip
-package-query
-pacman
-pam
-parallel
-pax-utils
-pixz
-pkgfile
-podman
-procps-ng
-pv
-sed
-shadowsocks-libev
-skopeo
-socat
-speedtest-cli
-sshpass
-strace
-systemd
-tig
-time
-tmux
-tree
-treeify
-trojan
-ttf-dejavu
-unzip
-util-linux
-vim
-wget
-wqy-zenhei
-yajl
-yaourt
-yay
-yq
+#!/usr/bin/env bash
+
+all(){
+  cd packages.d
+  ls -1 | xargs cat
+}
+
+bare(){
+  cat packages.d/bare
+}
+
+lite(){
+  cd packages.d
+  ls -1 | grep -v ^optional | xargs cat
+}
+
+main(){
+  case $1 in
+  bare)
+    bare
+  ;;
+  lite)
+    lite
+  ;;
+  *)
+    all
+  ;;
+  esac
+}
+
+main "$@"

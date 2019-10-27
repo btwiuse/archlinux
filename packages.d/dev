@@ -1,0 +1,6 @@
+multilib-devel
+lib32-glibc
+libselinux
+libsepol
+linux-headers
+base-devel

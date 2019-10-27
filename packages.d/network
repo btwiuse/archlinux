@@ -1,0 +1,10 @@
+iw
+create_ap
+dnsmasq
+hostapd
+iproute2
+iptables
+net-tools
+speedtest-cli
+dhcp
+inetutils

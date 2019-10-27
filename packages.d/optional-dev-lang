@@ -1,0 +1,15 @@
+go
+go-tools
+gn
+clang
+distcc
+llvm
+lld
+ninja
+ccache
+cmake
+ruby
+julia
+python
+python2
+nim
