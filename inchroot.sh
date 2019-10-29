@@ -27,10 +27,6 @@ setup-keyring(){
   pacman-key --init && pacman-key --populate archlinux archlinuxcn blackarch
 }
 
-install-binpkg(){
-  ls -1 pkg/*.pkg.tar* | xargs pacman -U --noconfirm --needed --overwrite '/*'
-}
-
 update-packages(){
 ./packages lite | xargs pacman -Syu --noconfirm --needed --overwrite '/*'
   pkgfile --update
@@ -40,7 +36,6 @@ main(){
   gen-locale
   ug
   setup-keyring
-# install-binpkg
   update-packages
 }
 

@@ -12,11 +12,9 @@ main(){
   cp --recursive --preserve=timestamps --backup --suffix=.pacold rootfs/* ${TMPDIR}/
 
   # 0x02
-  # install binpkg in chroot
-  # todo: github.com/btwiuse/arch
-  # todo: archlinux-bootstrap
+  # --install binpkg in chroot-- 
+  # can we do without this in the future?
   # todo: multiarch: x86, armv7, aarch64
-  test -d pkg || git clone https://github.com/btwiuse/archpkg pkg
   sudo mkdir -p ${TMPDIR}/root/arch
   mount --bind ${PWD} ${TMPDIR}/root/arch
   cat inchroot.sh | arch-chroot ${TMPDIR} bash |& ts -s '%M:%S [inchroot]'
