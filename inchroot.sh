@@ -2,10 +2,13 @@
 # chroot defaults to /
 cd /root/arch
 
+# should be default hook
+# redundant when ./update
 gen-locale(){
   locale-gen en_US.UTF-8
 }
 
+# common to ./update and from-scratch build
 ug(){
   # TODO: try chpasswd
 
@@ -23,12 +26,19 @@ ug(){
   echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/wheel
 }
 
+# should be default hook
+# redundant when ./update
 setup-keyring(){
   pacman-key --init && pacman-key --populate archlinux archlinuxcn blackarch
 }
 
+# should be default hook
 update-packages(){
+# mainly used to update existing packages when you run ./update
+# redundant when you build from scratch
 ./packages lite | xargs pacman -Syu --noconfirm --needed --overwrite '/*'
+# should be default hook
+# redundant when ./update
   pkgfile --update
 }
 

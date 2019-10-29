@@ -15,6 +15,7 @@ main(){
   # --install binpkg in chroot-- 
   # can we do without this in the future?
   # todo: multiarch: x86, armv7, aarch64
+  # idea: manage personal configs with package hooks, like locale-en_xx
   sudo mkdir -p ${TMPDIR}/root/arch
   mount --bind ${PWD} ${TMPDIR}/root/arch
   cat inchroot.sh | arch-chroot ${TMPDIR} bash |& ts -s '%M:%S [inchroot]'
