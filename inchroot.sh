@@ -40,7 +40,7 @@ main(){
   gen-locale
   ug
   setup-keyring
-  install-binpkg
+# install-binpkg
   update-packages
 }
 
