@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+docker pull latestarch/linux:stable
+docker pull latestarch/linux:latest
