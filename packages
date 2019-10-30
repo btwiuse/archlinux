@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+base(){
+  cd pkgs
+  cat base* base-devel dev keyring
+}
+
 all(){
   cd pkgs
   ls -1 | xargs cat
@@ -12,6 +17,9 @@ lite(){
 
 main(){
   case $1 in
+  base)
+    base
+  ;;
   lite)
     lite
   ;;

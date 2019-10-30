@@ -6,20 +6,22 @@ main(){
   # 0x00
   # from scratch
   # arch-bootstrap?
-  # env -i pacstrap -c -d -G -M ${TMPDIR} $(./packages all) |& ts -s '%M:%S [pacstrap]'
-  # sudo ./arch-bootstrap -q -d cache -a $ARCH
-  {
-  local newroot=$TMPDIR
-  local DEST=$TMPDIR
-  printf 'Creating install root at %s' "$newroot"
-  mkdir -m 0755 -p "$newroot"/var/{cache/pacman/pkg,lib/pacman,log} "$newroot"/{dev,run,etc/pacman.d}
-  mkdir -m 1777 -p "$newroot"/tmp
-  mkdir -m 0555 -p "$newroot"/{sys,proc}
-  test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
-  test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
-  test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
-  env LC_ALL=C pacman --arch ${ARCH:=x86_64} -r "${TMPDIR}" -Sy $(./packages lite) --cachedir=cache --noconfirm --config=rootfs/etc/pacman-bootstrap.conf --overwrite '/*'
-  } |& ts -s '%M:%S [pacstrap]'
+    env -i pacstrap -C rootfs/etc/pacman-bootstrap.conf -c -d -G -M ${TMPDIR} $(./packages base) |& ts -s '%M:%S [pacstrap]'
+# # sudo ./arch-bootstrap -q -d cache -a $ARCH
+# {
+# local newroot=$TMPDIR
+# local DEST=$TMPDIR
+# printf 'Creating install root at %s' "$newroot"
+# mkdir -m 0755 -p "$newroot"/var/{cache/pacman/pkg,lib/pacman,log} "$newroot"/{dev,run,etc/pacman.d/hooks}
+# mkdir -m 1777 -p "$newroot"/tmp
+# mkdir -m 0555 -p "$newroot"/{sys,proc}
+# sudo bsdtar -C $newroot -xvf cache/filesystem-2019.10-1-x86_64.pkg.tar.xz
+# test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
+# test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
+# test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
+# # --debug 
+# env LC_ALL=C pacman --noscriptlet --dbpath=$(mktemp -d) --logfile pacman-bootstrap.log --arch ${ARCH:=x86_64} -r "${TMPDIR}" -Sy $(./packages base) --cachedir=cache --noconfirm --config=rootfs/etc/pacman-bootstrap.conf --overwrite '/*'
+# } |& ts -s '%M:%S [pacstrap]'
 
   # 0x01
   # custom configurations
