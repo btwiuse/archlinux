@@ -9,6 +9,7 @@ gen-locale(){
 }
 
 # common to ./update and from-scratch build
+# todo: https://www.archlinux.org/todo/switch-to-systemd-sysusers/
 ug(){
   # TODO: try chpasswd
 

@@ -5,6 +5,7 @@ main(){
 
   # 0x00
   # from scratch
+  # arch-bootstrap?
   env -i pacstrap -c -d -G -M ${TMPDIR} $(./packages all) |& ts -s '%M:%S [pacstrap]'
 
   # 0x01
