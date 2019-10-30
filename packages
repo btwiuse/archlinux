@@ -5,10 +5,6 @@ all(){
   ls -1 | xargs cat
 }
 
-bare(){
-  cat pkgs/bare
-}
-
 lite(){
   cd pkgs
   ls -1 | grep -v ^optional | xargs cat
@@ -16,9 +12,6 @@ lite(){
 
 main(){
   case $1 in
-  bare)
-    bare
-  ;;
   lite)
     lite
   ;;
@@ -28,4 +21,4 @@ main(){
   esac
 }
 
-main "$@"
+main "$@" | grep -v '#' | grep . | sort -u
