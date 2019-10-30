@@ -30,7 +30,7 @@ ug(){
 # should be default hook
 # redundant when ./update
 setup-keyring(){
-  pacman-key --init && pacman-key --populate archlinux archlinuxcn blackarch
+  pacman-key --init && pacman-key --populate archlinux blackarch
 }
 
 # should be default hook
