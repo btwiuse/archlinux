@@ -12,4 +12,5 @@ openresty
 tcping-git
 tmux-xpanes
 uswsusp-git
-qemu-arm-static
+binfmt-qemu-static-all-arch
+qemu-user-static-git
