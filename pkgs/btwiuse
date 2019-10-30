@@ -12,3 +12,4 @@ openresty
 tcping-git
 tmux-xpanes
 uswsusp-git
+qemu-arm-static
