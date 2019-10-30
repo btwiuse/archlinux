@@ -9,7 +9,6 @@ ninja
 ccache
 cmake
 ruby
-julia
 python
 python2
 nim
