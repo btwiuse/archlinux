@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 all(){
-  cd packages.d
+  cd pkgs
   ls -1 | xargs cat
 }
 
 bare(){
-  cat packages.d/bare
+  cat pkgs/bare
 }
 
 lite(){
-  cd packages.d
+  cd pkgs
   ls -1 | grep -v ^optional | xargs cat
 }
 
