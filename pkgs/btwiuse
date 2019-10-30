@@ -1,12 +1,12 @@
 # del, rarely used
-arch-bootstrap
-genkernel-next-git
-uswsusp-git
-cros-container-guest-tools-git
+#arch-bootstrap
+#genkernel-next-git
+#uswsusp-git
+#ucros-container-guest-tools-git
 
 # x86_64 only
-binfmt-qemu-static-all-arch
-qemu-user-static-git
+#binfmt-qemu-static-all-arch
+#qemu-user-static-git
 
 # portable
 tmux-xpanes
@@ -14,6 +14,6 @@ cheat-bash-git
 fakepkg
 
 # todo (+yaourt)
-daemonize
-direnv
-tcping-git
+#daemonize
+#direnv
+#tcping-git
