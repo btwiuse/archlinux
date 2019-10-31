@@ -30,14 +30,17 @@ ug(){
 # should be default hook
 # redundant when ./update
 setup-keyring(){
-  pacman-key --init && pacman-key --populate archlinux blackarch
+  # pacman-key --init && pacman-key --populate archlinux blackarch
+  # x86
+  pacman-key --init && pacman-key --populate $(./keyrings)
 }
 
 # should be default hook
 update-packages(){
 # mainly used to update existing packages when you run ./update
 # redundant when you build from scratch
-./packages lite | xargs pacman -Syu --noconfirm --needed --overwrite '/*'
+# --cachedir=/root/arch/cache 
+./packages | xargs pacman -Syu --noconfirm --overwrite '/*'
 # should be default hook
 # redundant when ./update
   pkgfile --update

@@ -42,15 +42,17 @@ update_docker_image(){
     PKGDIR=/var/cache/pacman/pkg
   fi
 
+# -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
+# -v $PWD/rootfs/etc/pacman.conf:/etc/pacman.conf \
+  echo ${ARCH:=x86_64}
   $sudo docker \
   run \
   -u root \
   -v $PWD:$PWD \
+  -e ARCH=${ARCH} \
   -w $PWD \
   -v /var/run:/var/run \
-  -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg \
-  -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
-  -v $PWD/rootfs/etc/pacman.conf:/etc/pacman.conf \
+  -v ${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg \
   --privileged \
   --net=host \
   latestarch/linux:stable \

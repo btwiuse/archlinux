@@ -5,8 +5,8 @@
 #ucros-container-guest-tools-git
 
 # x86_64 only
-#binfmt-qemu-static-all-arch
-#qemu-user-static-git
+binfmt-qemu-static-all-arch
+qemu-user-static-git
 
 # portable
 tmux-xpanes

@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
 
+{
+pwd
+ls -l
+} 1>&2
+
 base(){
-  cd pkgs
+  pushd pkgs/common >/dev/null
   cat base* base-devel dev keyring
+  popd >/dev/null
 }
 
 all(){
-  cd pkgs
+  pushd pkgs/common >/dev/null
   ls -1 | xargs cat
+  popd >/dev/null
 }
 
 lite(){
-  cd pkgs
+  pushd pkgs/common >/dev/null
   ls -1 | grep -v ^optional | xargs cat
+  popd >/dev/null
+}
+
+arch(){
+  pushd pkgs/${ARCH} >/dev/null
+  cat *
+  popd >/dev/null
 }
 
 main(){
@@ -27,6 +41,7 @@ main(){
     all
   ;;
   esac
+  arch
 }
 
-main "$@" | grep -v '#' | grep . | sort -u
+main "$@" | grep -v '#' | grep .

@@ -6,8 +6,17 @@ main(){
   # 0x00
   # from scratch
   # arch-bootstrap?
-    env -i pacstrap -C rootfs/etc/pacman-bootstrap.conf -c -d -G -M ${TMPDIR} $(./packages base) |& ts -s '%M:%S [pacstrap]'
-# # sudo ./arch-bootstrap -q -d cache -a $ARCH
+# mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true
+# pacman -U --noconfirm cache/qemu-user-static-git-4.1.0-1.pkg.tar.xz cache/binfmt-qemu-static-all-arch-20190813-1.pkg.tar.xz
+# cache/binfmt-qemu-static-all-arch-20190813-1.pkg.tar.xz
+# cat /usr/lib/binfmt.d/qemu-static.conf | while read -r line; do echo "$line" | sudo tee /proc/sys/fs/binfmt_misc/register; done
+  # echo ${ARCH:=i686}
+  # echo ${ARCH:=x86_64}
+  # echo ${ARCH:=aarch64}
+  if [[ -z $ARCH ]]; then exit 1; fi
+  printf 'Bootstrapping btwiuse/arch:%s\n' "$ARCH"
+  env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages base) |& ts -s "%M:%S [${ARCH}::pacstrap]"
+#   sudo ./arch-bootstrap -q -d cache -a ${ARCH:-i686} ${TMPDIR}
 # {
 # local newroot=$TMPDIR
 # local DEST=$TMPDIR
@@ -26,6 +35,7 @@ main(){
   # 0x01
   # custom configurations
   cp --recursive --preserve=timestamps --backup --suffix=.pacold rootfs/* ${TMPDIR}/
+  ln -sf pacman-${ARCH}.conf ${TMPDIR}/etc/pacman.conf
 
   # 0x02
   # --install binpkg in chroot-- 
@@ -39,7 +49,7 @@ main(){
   # classic ebooks ...
   sudo mkdir -p ${TMPDIR}/root/arch
   mount --bind ${PWD} ${TMPDIR}/root/arch
-  cat inchroot.sh | arch-chroot ${TMPDIR} bash |& ts -s '%M:%S [inchroot]'
+  cat inchroot.sh | arch-chroot ${TMPDIR} env LC_ALL=C ARCH=${ARCH} bash |& ts -s "%M:%S [${ARCH}::inchroot]"
   umount ${TMPDIR}/root/arch
 
   # 0x03

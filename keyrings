@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+main(){
+  cat pkgs/{common,$ARCH}/keyring
+}
+
+main "$@" | sed s/-keyring//g | sort -u
