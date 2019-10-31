@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# chroot defaults to /
-cd /root/arch
+
+set -e
 
 # should be default hook
 # redundant when ./update
@@ -39,18 +39,20 @@ setup-keyring(){
 update-packages(){
 # mainly used to update existing packages when you run ./update
 # redundant when you build from scratch
-# --cachedir=/root/arch/cache 
-./packages | xargs pacman -Syu --noconfirm --overwrite '/*'
+# --cachedir=/root/arch/cache-${ARCH} 
+./packages base | xargs pacman -Syu --noconfirm --overwrite '/*'
 # should be default hook
 # redundant when ./update
-  pkgfile --update
+# pkgfile --update
 }
 
-main(){
+stage2(){
+  # chroot defaults to /
+  cd /root/arch
   gen-locale
   ug
   setup-keyring
   update-packages
 }
 
-main "$@"
+stage2 "$@"

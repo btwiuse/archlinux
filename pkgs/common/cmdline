@@ -1,10 +1,11 @@
 time
-man
+man-db
+man-pages
 tmux
 socat
 pv
 bash-completion
-bat
+#bat
 util-linux
 tree
 treeify

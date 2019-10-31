@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 
-{
-pwd
-ls -l
-} 1>&2
-
 base(){
   pushd pkgs/common >/dev/null
   cat base* base-devel dev keyring
+  popd >/dev/null
+
+  pushd pkgs/${ARCH} >/dev/null
+  cat keyring
   popd >/dev/null
 }
 
@@ -15,33 +14,26 @@ all(){
   pushd pkgs/common >/dev/null
   ls -1 | xargs cat
   popd >/dev/null
-}
 
-lite(){
-  pushd pkgs/common >/dev/null
-  ls -1 | grep -v ^optional | xargs cat
-  popd >/dev/null
-}
-
-arch(){
   pushd pkgs/${ARCH} >/dev/null
   cat *
   popd >/dev/null
 }
 
-main(){
+common(){
   case $1 in
   base)
     base
-  ;;
-  lite)
-    lite
   ;;
   *)
     all
   ;;
   esac
-  arch
+}
+
+main(){
+  if [[ -z $ARCH ]]; then ARCH=x86_64; fi
+  common "$@"
 }
 
 main "$@" | grep -v '#' | grep .

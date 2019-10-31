@@ -32,22 +32,23 @@ gather_info(){
   # ifconfig -a
 }
 
+is_stdin_a_tty(){ [[ -t 0 ]] ;}
+
 update_docker_image(){
   sudo=sudo
   if [[ $(whoami) = root ]]; then
     sudo=""
   fi
 
-  echo ${ARCH:=x86_64}
-
-  if [[ $(uname -m) = $ARCH ]] && [[ -d /var/cache/pacman/pkg ]]; then
+  # if host_arch == guest_arch == amd64 && host.is_arch()
+  if [[ $(uname -m) = ${ARCH:=x86_64} ]] && [[ -d /var/cache/pacman/pkg ]]; then
     PKGDIR=/var/cache/pacman/pkg
   fi
 
 # -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
 # -v $PWD/rootfs/etc/pacman.conf:/etc/pacman.conf \
   $sudo docker \
-  run \
+  run $([[ -t 0 ]] && echo -it) \
   -u root \
   -v $PWD:$PWD \
   -e ARCH=${ARCH} \
@@ -57,12 +58,12 @@ update_docker_image(){
   --privileged \
   --net=host \
   latestarch/linux:stable \
-  ./build
+  ./stage1
 }
 
 main(){
   echo "------ HOOK START - BUILD -------"
-  gather_info
+# gather_info
   update_docker_image
   echo "------ HOOK END - BUILD -------"
 }

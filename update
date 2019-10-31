@@ -14,7 +14,7 @@
 
   # stage 2
   # install packages
-  cat inchroot.sh | grep -v ^pacman-key | grep -v ^pkgfile | docker run -i --name=$TMP -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg -v $PWD:/root/arch -w /root/arch --privileged -u root --net=host $TMP bash -v
+  cat stage2 | grep -v ^pacman-key | grep -v ^pkgfile | docker run -i --name=$TMP -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg -v $PWD:/root/arch -w /root/arch --privileged -u root --net=host $TMP bash -v
   docker commit \
   --change 'USER btwiuse' \
   --change 'WORKDIR /home/btwiuse' \
