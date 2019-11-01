@@ -9,7 +9,7 @@ stage1(){
   # from scratch
   if [[ -z $ARCH ]]; then exit 1; fi
   printf 'Bootstrapping btwiuse/arch:%s\n' "$ARCH"
-  env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap) |& ts -s "%M:%S [${ARCH}::stage1/2]"
+  env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap) |& ts -s "stage1]"
 
   # 0x01
   # custom configurations
@@ -28,7 +28,7 @@ stage1(){
   mount --bind ${PWD} ${TMPDIR}/root/arch
   # propagate host cache from stage1 to stage2
   mount --bind {,${TMPDIR}}/var/cache/pacman/pkg
-  cat stage2 | arch-chroot ${TMPDIR} env LC_ALL=C ARCH=${ARCH} bash |& ts -s "%M:%S [${ARCH}::stage2/2]"
+  cat stage2 | arch-chroot ${TMPDIR} env LC_ALL=C ARCH=${ARCH} bash |& ts -s "stage2]"
   umount ${TMPDIR}/var/cache/pacman/pkg
   umount ${TMPDIR}/root/arch
 
@@ -50,4 +50,4 @@ stage1(){
   rm -rf ${TMPDIR}
 }
 
-stage1 "$@"
+stage1 "$@" |& ts -s "%M:%S [${ARCH}:"

@@ -40,7 +40,7 @@ update-packages(){
 # mainly used to update existing packages when you run ./update
 # redundant when you build from scratch
 # --cachedir=/root/arch/cache-${ARCH} 
-./packages base | xargs pacman -Syu --noconfirm --overwrite '/*'
+./packages base | xargs pacman -Syu --needed --noconfirm --overwrite '/*'
 # should be default hook
 # redundant when ./update
 # pkgfile --update
