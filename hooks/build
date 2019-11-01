@@ -52,6 +52,7 @@ update_docker_image(){
   -u root \
   -v $PWD:$PWD \
   -e ARCH=${ARCH} \
+  -e VARIANT=${VARIANT:-base} \
   -w $PWD \
   -v /var/run:/var/run \
   -v ${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg \

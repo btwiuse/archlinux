@@ -34,7 +34,7 @@ stage1(){
 
   # 0x03
   # docker import
-  IMAGE=latestarch/linux:latest-${ARCH}
+  IMAGE=latestarch/linux:${VARIANT}-${ARCH}
   echo "building $IMAGE ..."
   /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
   --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en TERM=screen TZ=Asia/Shanghai' \
