@@ -49,10 +49,11 @@ update-packages(){
 stage2(){
   # chroot defaults to /
   cd /root/arch
+  # order matters here, you need sudo installed to setup sudoers...
+  update-packages
   gen-locale
   ug
   setup-keyring
-  update-packages
 }
 
 stage2 "$@"
