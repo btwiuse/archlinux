@@ -5,6 +5,9 @@ bootstrap(){
   # bugs.archlinux.org/task/23608
   echo sed
   echo gzip
+  # this script itself depends on grep...
+  # learn to awk later...
+  echo grep
   cat archlinux-bootstrap-packages
   popd >/dev/null
 }
