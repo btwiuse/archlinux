@@ -1,6 +1,6 @@
 x86_64
 i686
 arm
-armv6
-armv7
+armv6h
+armv7h
 aarch64
