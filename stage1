@@ -9,7 +9,7 @@ stage1(){
   # from scratch
   if [[ -z $ARCH ]]; then exit 1; fi
   printf 'Bootstrapping btwiuse/arch:%s\n' "$ARCH"
-  env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages base) |& ts -s "%M:%S [${ARCH}::stage1/2]"
+  env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap) |& ts -s "%M:%S [${ARCH}::stage1/2]"
 
   # 0x01
   # custom configurations

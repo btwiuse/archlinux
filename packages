@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
+bootstrap(){
+  pushd pkgs >/dev/null
+  cat archlinux-bootstrap-packages
+  popd >/dev/null
+}
+
 base(){
   pushd pkgs/common >/dev/null
-  cat base* base-devel dev keyring
+  cat base* base-devel dev keyring editor cmdline
   popd >/dev/null
 
   pushd pkgs/${ARCH} >/dev/null
@@ -22,6 +28,9 @@ all(){
 
 common(){
   case $1 in
+  bootstrap)
+    bootstrap
+  ;;
   base)
     base
   ;;
