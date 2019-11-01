@@ -3,3 +3,4 @@
 /.idea
 /pkg/
 /cache*
+/qemu-static

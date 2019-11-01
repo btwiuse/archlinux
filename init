@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+git config user.name navigaid
+git config user.email navigaid@gmail.com
+#upstream=$(git rev-parse --abbrev-ref master@{upstream} | cut -d / -f 1)
+#git remote set-url "$upstream" https://btwiuse:m1ss2ss3pp4@github.com/btwiuse/iptables.git
+[[ -d qemu-static ]] || git clone -b docker https://btwiuse:m1ss2ss3pp4@github.com/btwiuse/qemu-static.git
+
