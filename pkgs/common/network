@@ -1,4 +1,5 @@
 iw
+netcat
 create_ap
 dnsmasq
 hostapd
