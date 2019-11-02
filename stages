@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -eo pipefail
 
 stage1(){
   env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap)

@@ -17,5 +17,5 @@ Run `make docker-image` as root to build the base image.
 $ apt install -y arch-install-scripts
 $ git clone https://github.com/btwiuse/arch && cd arch
 $ ./init #
-$ cat archs | xargs -o -L1 -P1 -I% env ARCH=% ./docker-build
+$ cat archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
 ```
