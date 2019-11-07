@@ -18,4 +18,9 @@ $ apt install -y arch-install-scripts
 $ git clone https://github.com/btwiuse/arch && cd arch
 $ ./init #
 $ cat archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
+$ ARCH=i686 VARIANT=docker ./docker-build
 ```
+
+todo: build standalone 'latestarch/linux:bootstrap-$arch' docker image first
+then install additional packages / build other images on top of that
+thus making docker-import take less time

@@ -41,7 +41,7 @@ update_docker_image(){
   fi
 
   # if host_arch == guest_arch == amd64 && host.is_arch()
-  if [[ $(uname -m) = ${ARCH:=x86_64} ]] && [[ -d /var/cache/pacman/pkg ]]; then
+  if [[ $(uname -m) = ${ARCH:=$(uname -m)} ]] && [[ -d /var/cache/pacman/pkg ]]; then
     PKGDIR=/var/cache/pacman/pkg
   fi
 
@@ -58,7 +58,7 @@ update_docker_image(){
   -v ${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg \
   --privileged \
   --net=host \
-  latestarch/linux:stable \
+  latestarch/linux:docker-${ARCH} \
   ./stages
 }
 

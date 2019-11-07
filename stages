@@ -55,7 +55,7 @@ stage2(){
 	# mainly used to update existing packages when you run ./update
 	# redundant when you build from scratch
 	# --cachedir=/root/arch/cache-${ARCH} 
-	./packages base | xargs pacman -Syu --needed --noconfirm --overwrite '/*'
+	./packages ${VARIANT} | xargs pacman -Syu --needed --noconfirm --overwrite '/*'
 	# should be default hook
 	# redundant when ./update
 	# pkgfile --update
@@ -96,7 +96,7 @@ main(){
   # 0x00
   # from scratch
   if [[ -z $ARCH ]]; then exit 1; fi
-  printf 'Bootstrapping btwiuse/arch:%s\n' "$ARCH"
+  printf 'Bootstrapping btwiuse/arch:bootstrap-%s\n' "$ARCH"
   stage1 |& ts -s "stage1]"
 
   # 0x01

@@ -40,6 +40,10 @@ common(){
   base)
     base
   ;;
+  docker)
+    base
+    echo docker
+  ;;
   *)
     all
   ;;
