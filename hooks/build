@@ -58,7 +58,7 @@ update_docker_image(){
   -v ${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg \
   --privileged \
   --net=host \
-  latestarch/linux:docker-${ARCH} \
+  latestarch/linux:stable \
   ./stages
 }
 
