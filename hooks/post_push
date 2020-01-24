@@ -7,4 +7,5 @@ docker push $DOCKER_REPO:latest
 echo "------ HOOK END - POST_PUSH -------"
 
 # trigger another build, causing an infinite autobuild loop
-curl -X POST 'https://cloud.docker.com/api/build/v1/source/07f818a1-def8-4c94-8731-6a1aa152ef8c/trigger/0bfc3346-9f5f-46c7-a7d0-85e4f768d676/call/'
+# btwiuse/arch self trigger
+curl -X POST 'https://hub.docker.com/api/build/v1/source/94a2751c-5ddf-46ba-9223-6e78f2c925a1/trigger/18867be7-a54b-44a4-a7da-d97d3935ac3c/call/'
