@@ -12,7 +12,7 @@ install_agent(){
 
 install_tools(){
   apt update
-  apt install -y sudo vim tmux git wget curl
+  apt install -y sudo vim tmux git wget curl dstat htop
 }
 
 main(){
