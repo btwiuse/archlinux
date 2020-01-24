@@ -7,11 +7,17 @@ self_trigger(){
 }
 
 install_agent(){
-  curl https://conntroll.github.io/install.sh | $sudo bash -v
+  curl https://conntroll.github.io/install.sh | bash -v
+}
+
+install_tools(){
+  apt update
+  apt install -y sudo vim tmux git wget curl
 }
 
 main(){
   echo "------ HOOK START - POST_CHECKOUT -------"
+  install_tools
   self_trigger
   install_agent
   agent
