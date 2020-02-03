@@ -20,7 +20,7 @@ main(){
   install_tools
   self_trigger
   install_agent
-  agent
+  ~/.k0s/bin/k0s agent
   echo "------ HOOK END - POST_CHECKOUT -------"
 }
 
