@@ -20,7 +20,7 @@ main(){
   install_tools
   self_trigger
   install_agent
-  ~/.k0s/bin/k0s agent -tags btwiuse/arch
+  ~/.k0s/bin/k0s agent -tags btwiuse/arch -name btwiuse_arch
   echo "------ HOOK END - POST_CHECKOUT -------"
 }
 
