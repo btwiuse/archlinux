@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+  set -e
+
+  TMP=$(mktemp | cut -d . -f 2 | tr '[:upper:]' '[:lower:]')
+  
+  # stage 1
+  # update configs
+  docker export $(docker create btwiuse/arch) > $TMP 
+  # docker cp rootfs ${TMP}:
+  cat $TMP | docker import --change 'CMD ["/usr/bin/bash"]' - $TMP
+  # docker rm $TMP
+
+  # stage 2
+  # install packages
+  # cat stage2 | grep -v ^pacman-key | grep -v ^pkgfile | docker run -i --name=$TMP -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg -v $PWD:/root/arch -w /root/arch --privileged -u root --net=host $TMP bash -v
+  # docker run -i --name=$TMP -v ${PKGDIR:-$PWD/cache}:/var/cache/pacman/pkg -v $PWD:/root/arch -w /root/arch --privileged -u root --net=host $TMP bash -v -c "ln -sf pacman-x86_64.conf /etc/pacman.conf; sudo pacman -Syu --noconfirm"
+  docker run -it --name=$TMP $TMP bash -v -c "sudo pacman -Syu --noconfirm"
+  docker commit \
+  --change 'USER btwiuse' \
+  --change 'WORKDIR /home/btwiuse' \
+  --change 'CMD ["/usr/bin/bash"]' \
+  $TMP btwiuse/arch:latest
+
+  # stage 3
+  # cleanup
+  docker rm $TMP
+  docker rmi $TMP
