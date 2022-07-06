@@ -11,6 +11,8 @@ update_docker_image(){
   # if host_arch == guest_arch == amd64 && host.is_arch()
   if [[ $(uname -m) = "${ARCH:=$(uname -m)}" ]] && [[ -d /var/cache/pacman/pkg ]]; then
     PKGDIR=/var/cache/pacman/pkg
+  else
+    PKGDIR="$PWD/cache-${ARCH}"
   fi
 
 # -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
@@ -20,10 +22,11 @@ update_docker_image(){
   -u root \
   -v "$PWD:$PWD" \
   -e "ARCH=${ARCH}" \
+  -e "PKGDIR=${PKGDIR}" \
   -e "VARIANT=${VARIANT:-base}" \
   -w "$PWD" \
   -v /var/run:/var/run \
-  -v "${PKGDIR:-$PWD/cache-${ARCH}}:/var/cache/pacman/pkg" \
+  -v "${PKGDIR}:/var/cache/pacman/pkg" \
   --privileged \
   --net=host \
   btwiuse/arch:docker-x86_64 \
