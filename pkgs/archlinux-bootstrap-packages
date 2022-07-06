@@ -31,7 +31,7 @@ gmp
 gnupg
 gnutls
 gpgme
-hwids
+hwdata
 iana-etc
 iptables
 json-c
