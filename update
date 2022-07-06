@@ -9,7 +9,7 @@
   
   # stage 1
   # update configs
-  docker create --name=$TMP latestarch/linux:stable
+  docker create --name=$TMP btwiuse/arch:stable
   # docker cp rootfs ${TMP}:
   docker commit --change 'CMD ["/usr/bin/bash"]' $TMP $TMP
   docker rm $TMP
@@ -23,7 +23,7 @@
   --change 'USER btwiuse' \
   --change 'WORKDIR /home/btwiuse' \
   --change 'CMD ["/usr/bin/bash"]' \
-  $TMP latestarch/linux:latest
+  $TMP btwiuse/arch:latest
 
   # stage 3
   # cleanup

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-docker pull latestarch/linux:stable
-docker pull latestarch/linux:latest
+docker pull btwiuse/arch:stable
+docker pull btwiuse/arch:latest

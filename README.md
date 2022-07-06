@@ -21,13 +21,13 @@ $ cat archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
 $ ARCH=i686 VARIANT=docker ./docker-build
 ```
 
-todo: build standalone 'latestarch/linux:bootstrap-$arch' docker image first
+todo: build standalone 'btwiuse/arch:bootstrap-$arch' docker image first
 then install additional packages / build other images on top of that
 thus making docker-import take less time
 
 ```
 # alternative method for building base packages
 export ARCH=x86_64 VARIANT=base;
-id=$(docker run -dit -v $PWD:/root/arch -w /root/arch -v /var/cache/pacman/pkg:/var/cache/pacman/pkg latestarch/linux:bootstrap-$ARCH bash);
+id=$(docker run -dit -v $PWD:/root/arch -w /root/arch -v /var/cache/pacman/pkg:/var/cache/pacman/pkg btwiuse/arch:bootstrap-$ARCH bash);
 docker exec -it $id bash -c "./packages $VARIANT | xargs pacman --config rootfs/etc/pacman-bootstrap-$ARCH.conf -Sy --noconfirm --needed"
 ```
