@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-docker login -u latestarch -p m1ss2ss3pp4
+docker login -u btwiuse -p m1ss2ss3pp4
+docker push btwiuse/arch:base-x86_64
+docker push btwiuse/arch:bootstrap-x86_64
+
+exit
 docker tag btwiuse/arch:{latest,stable}
 docker push btwiuse/arch:stable
 docker push btwiuse/arch:latest
