@@ -66,7 +66,7 @@ libtasn1
 libtirpc
 libunistring
 libusb
-libutil-linux
+util-linux-libs
 linux-api-headers
 lz4
 mpfr
