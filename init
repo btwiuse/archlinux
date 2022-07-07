@@ -5,3 +5,4 @@ git config user.email navigaid@gmail.com
 #git remote set-url "$upstream" https://github.com/btwiuse/arch.git
 [[ -d qemu-static ]] || git clone -b master https://github.com/btwiuse/qemu-static.git
 
+docker pull btwiuse/arch:base-x86_64
