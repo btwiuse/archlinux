@@ -17,7 +17,7 @@ stage1(){
   fi
 
   echo "Your bootstrap image is ready!"
-  echo "docker run -it $BOOTSTRAP_IMAGE"
+  echo "$ docker run -it $BOOTSTRAP_IMAGE"
 }
 
 stage2(){
@@ -115,7 +115,7 @@ stage3(){
 # --change 'USER btwiuse' \
 # --change 'WORKDIR /home/btwiuse' \
   echo "Your image is ready!"
-  echo "docker run -it $IMAGE"
+  echo "$ docker run -it $IMAGE"
 }
 
 main(){
