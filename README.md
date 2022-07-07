@@ -22,7 +22,7 @@ Run `./docker-build` to build the base image.
 
 ```
 $ ./init #
-$ cat archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
+$ ./archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
 $ ARCH=i686 VARIANT=docker ./docker-build
 ```
 

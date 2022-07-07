@@ -1,6 +1,8 @@
+cat <<EOF | grep -v '#'
 x86_64
 i686
-arm
-armv6h
-armv7h
+# arm
+# armv6h
+# armv7h
 aarch64
+EOF
