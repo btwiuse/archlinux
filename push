@@ -2,7 +2,11 @@
 
 docker login -u btwiuse
 
-docker tag btwiuse/arch:{base-x86_64,latest}
-docker push btwiuse/arch:base-x86_64
 docker push btwiuse/arch:bootstrap-x86_64
+docker push btwiuse/arch:bootstrap-i686
+
+docker push btwiuse/arch:base-x86_64
+docker push btwiuse/arch:base-i686
+
+docker tag btwiuse/arch:{base-x86_64,latest}
 docker push btwiuse/arch:latest
