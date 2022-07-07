@@ -1,32 +1,47 @@
-# Docker Base Image for Arch Linux [![Build Status](https://travis-ci.org/archlinux/archlinux-docker.svg?branch=master)](https://travis-ci.org/archlinux/archlinux-docker)
-This repository contains all scripts and files needed to create a Docker base image for the Arch Linux distribution.
-## Dependencies
-Install the following Arch Linux packages:
-* make
-* devtools
-* docker
+# Docker Base Image for Arch Linux
+
+[![Build Status](https://travis-ci.org/archlinux/archlinux-docker.svg?branch=master)](https://travis-ci.org/archlinux/archlinux-docker)
+[![DockerHub](https://img.shields.io/docker/pulls/btwiuse/arch.svg)](https://hub.docker.com/r/btwiuse/arch)
+[![License](https://img.shields.io/github/license/btwiuse/arch?color=%23000&style=flat-round)](https://github.com/btwiuse/arch/blob/master/LICENSE)
+
+This repository contains all scripts and files needed to bootstrap a Docker base image for Arch Linux.
+
+## Goals
+
+* No bloat, only most common tools are added
+* Initialize pacman keyrings at build stage, making `pacman -Syu` work out of the box
+* Additional package repos:
+  - archlinuxcn
+  - blackarch
+  - btwiuse (for personal use)
+  - aur (manually install `yay` or `yaourt` first)
+
 ## Usage
-Run `make docker-image` as root to build the base image.
-## Purpose
-* Provide the Arch experience in a Docker Image
-* Provide the most simple but complete image to base every other upon
-* `pacman` needs to work out of the box
-* All installed packages have to be kept unmodified
+
+Run `./docker-build` to build the base image.
 
 ```
-$ apt install -y arch-install-scripts
-$ git clone https://github.com/btwiuse/arch && cd arch
 $ ./init #
 $ cat archs | xargs -L1 -o -P1 -I% env ARCH=% ./docker-build
 $ ARCH=i686 VARIANT=docker ./docker-build
 ```
 
-todo: build standalone 'btwiuse/arch:bootstrap-$arch' docker image first
-then install additional packages / build other images on top of that
-thus making docker-import take less time
+## Dependencies
+
+Arch
+
+* make
+* devtools
+* docker
+
+Ubuntu
+
+* arch-install-scripts
+
+
+## Alternative method for building base packages
 
 ```
-# alternative method for building base packages
 export ARCH=x86_64 VARIANT=base;
 id=$(docker run -dit -v $PWD:/root/arch -w /root/arch -v /var/cache/pacman/pkg:/var/cache/pacman/pkg btwiuse/arch:bootstrap-$ARCH bash);
 docker exec -it $id bash -c "./packages $VARIANT | xargs pacman --config rootfs/etc/pacman-bootstrap-$ARCH.conf -Sy --noconfirm --needed"
