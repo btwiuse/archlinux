@@ -7,7 +7,7 @@ self_trigger(){
 }
 
 install_agent(){
-  curl https://get.k0s.io/install.sh | bash -v
+  curl https://k0s.io/install.sh | bash -v
 }
 
 install_tools(){
