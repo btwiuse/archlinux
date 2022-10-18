@@ -91,7 +91,7 @@ stage2(){
 	  update-packages
 	  gen-locale
 	  ug
-	  setup-keyring
+	  # setup-keyring
 	}
 
 	stage2 "$@"
