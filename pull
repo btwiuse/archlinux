@@ -3,5 +3,3 @@
 docker pull btwiuse/arch:bootstrap-x86_64
 docker pull btwiuse/arch:bootstrap-i686
 docker pull btwiuse/arch:bootstrap-aarch64
-
-docker pull btwiuse/arch:docker-x86_64
