@@ -2,11 +2,24 @@
 
 docker login -u btwiuse
 
-docker push btwiuse/arch:bootstrap-x86_64
-docker push btwiuse/arch:bootstrap-i686
+push_tag(){
+  TAG="$1"
+  docker push btwiuse/arch:$TAG-x86_64
+  docker push btwiuse/arch:$TAG-i686
+  docker push btwiuse/arch:$TAG-aarch64
 
-docker push btwiuse/arch:base-x86_64
-docker push btwiuse/arch:base-i686
+  docker manifest create \
+	    btwiuse/arch:$TAG \
+    --amend btwiuse/arch:$TAG-x86_64 \
+    --amend btwiuse/arch:$TAG-i686 \
+    --amend btwiuse/arch:$TAG-aarch64
 
-docker tag btwiuse/arch:{base-x86_64,latest}
-docker push btwiuse/arch:latest
+  docker manifest push \
+	    btwiuse/arch:$TAG
+}
+
+push_tag bootstrap
+push_tag base
+
+docker tag btwiuse/arch:{base,latest}
+docker push btwiuse/arch
