@@ -13,6 +13,7 @@ install_agent(){
 install_tools(){
   apt update
   apt install -y sudo vim tmux git wget curl dstat htop
+  docker run --privileged --rm tonistiigi/binfmt --install all
 }
 
 main(){
