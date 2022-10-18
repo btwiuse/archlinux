@@ -14,6 +14,10 @@ push_tag(){
     --amend btwiuse/arch:$TAG-i686 \
     --amend btwiuse/arch:$TAG-aarch64
 
+  docker manifest annotate --os linux --arch amd64 btwiuse/arch:$TAG btwiuse/arch:$TAG-x86_64
+  docker manifest annotate --os linux --arch 386 btwiuse/arch:$TAG btwiuse/arch:$TAG-i686
+  docker manifest annotate --os linux --arch arm64 --variant v8 btwiuse/arch:$TAG btwiuse/arch:$TAG-aarch64
+
   docker manifest push \
 	    btwiuse/arch:$TAG
 }
