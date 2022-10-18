@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+ARCH="$ARCH"
+REPO="$1"
+
+echo "ARCH=$ARCH"
+
+mkdir -p $REPO
+
+cd $REPO
+docker save $REPO | tar xv
+
+JSON=$(ls -1 *.json | grep -v manifest.json | tail -n1)
+
+[[ $ARCH == i686 ]] && {
+  cat $JSON | jq '.architecture="i386"' | sponge $JSON
+}
+
+[[ $ARCH == aarch64 ]] && {
+  cat $JSON | jq '.architecture="arm64"' | jq '.variant="v8"' | sponge $JSON
+}
+
+tar c . | docker load

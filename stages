@@ -9,9 +9,9 @@ stage1(){
     env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap)
 
     /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
-    --platform "$PLATFORM" \
     --change 'CMD ["/usr/bin/bash"]' \
     - $BOOTSTRAP_IMAGE
+    ./configure_platform $BOOTSTRAP_IMAGE
   else
   # docker export $(docker create $BOOTSTRAP_IMAGE) | tar -xC ${TMPDIR}
     true
@@ -24,7 +24,6 @@ stage1(){
 stage2(){
   docker run -i \
     --name=${NAME} \
-    --platform "$PLATFORM" \
     -v ${PWD}:/root/arch \
     -v ${PKGDIR}:/var/cache/pacman/pkg \
     -e LC_ALL=C \
@@ -108,6 +107,7 @@ stage3(){
   --change 'CMD ["/usr/bin/bash"]' \
   --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en' \
   $NAME $IMAGE
+  ./configure_platform $IMAGE
 
 # /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
 # --change 'CMD ["/usr/bin/bash"]' \
@@ -127,11 +127,6 @@ main(){
   NAME=$(echo ${TMPDIR} | cut -d . -f 2 | tr '[:upper:]' '[:lower:]')
 
   BOOTSTRAP_IMAGE=btwiuse/arch:bootstrap-${ARCH}
-
-  PLATFORM=linux/amd64
-  [[ $ARCH == "aarch64" ]] && PLATFORM=linux/arm64/v8
-  [[ $ARCH == "i686" ]] && PLATFORM=linux/i386
-  echo PLATFORM=$PLATFORM
 
   # 0x00
   # from scratch
