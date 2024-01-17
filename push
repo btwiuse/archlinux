@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-docker login -u btwiuse
+docker login -u btwiuse -p d40cb888-6a3f-4603-974f-8e3b9ef9daca
 
 push_tag(){
   TAG="$1"

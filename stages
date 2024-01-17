@@ -6,7 +6,7 @@ stage1(){
   echo "bootstrapping $BOOTSTRAP_IMAGE ..."
 
   if ! docker inspect $BOOTSTRAP_IMAGE &>/dev/null; then
-    env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -d -G -M ${TMPDIR} $(./packages bootstrap)
+    env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -G -M ${TMPDIR} $(./packages bootstrap)
 
     /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
     --change 'CMD ["/usr/bin/bash"]' \
@@ -56,7 +56,8 @@ stage2(){
 	    done
 	  done
 
-	  echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/wheel
+          mkdir -p /etc/sudoers.d
+	  echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
 	}
 
 	# should be default hook
