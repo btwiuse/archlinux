@@ -20,6 +20,8 @@ base(){
   pushd pkgs/${ARCH} >/dev/null
   cat keyring
   popd >/dev/null
+
+  echo docker
 }
 
 all(){
@@ -42,7 +44,6 @@ common(){
   ;;
   docker)
     base
-    echo docker
   ;;
   *)
     all
