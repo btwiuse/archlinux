@@ -39,7 +39,7 @@ jobs:
           path: |
             ~/.cache/pacman/pkg
             cache-x86_64
-          key: pacman-amd64-${{ hashFiles('pkgs/**') }}-${{ hashFiles('rootfs/**') }}
+          key: pacman-amd64-${{ hashFiles('pkgs/**') }}-${{ hashFiles('rootfs/etc/**') }}
           restore-keys: |
             pacman-amd64-
 
