@@ -22,15 +22,7 @@ permissions:
   contents: read
   packages: write
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/arch
-
 jobs:
-  # ----------------------------------------------------------------------
-  # Build amd64 bootstrap image on a fresh Ubuntu runner, then publish to
-  # GitHub Container Registry using the workflow's GITHUB_TOKEN.
-  # ----------------------------------------------------------------------
   bootstrap-amd64:
     name: bootstrap amd64 -> ghcr.io
     runs-on: ubuntu-latest
@@ -56,6 +48,8 @@ jobs:
         run: |
           set -euo pipefail
           ARCH=x86_64
+          OWNER="${{ github.repository_owner }}"
+          IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
           TMPDIR=$(mktemp -d)
           export PKGDIR=$HOME/.cache/pacman/pkg
           mkdir -p "$PKGDIR"
@@ -63,17 +57,18 @@ jobs:
           sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
               | docker import \
                   --change 'CMD ["/usr/bin/bash"]' \
-                  - "${IMAGE_PREFIX}:bootstrap-${ARCH}"
+                  - "$IMAGE"
           sudo rm -rf "$TMPDIR"
-          docker images "${IMAGE_PREFIX}"
+          docker images "$IMAGE"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push bootstrap image to ghcr.io
         run: |
-          docker push "${IMAGE_PREFIX}:bootstrap-x86_64"
+          OWNER="${{ github.repository_owner }}"
+          docker push "ghcr.io/${OWNER}/arch:bootstrap-x86_64"
