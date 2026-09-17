@@ -44,7 +44,7 @@ jobs:
           command -v pacman
           pacman --version | head -1
 
-      - name: stage1: pacstrap + tar + docker import
+      - name: "stage1: pacstrap + tar + docker import"
         run: |
           set -euo pipefail
           ARCH=x86_64
