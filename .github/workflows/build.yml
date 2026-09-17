@@ -346,25 +346,35 @@ jobs:
           TAG: ${{ steps.pick.outputs.tag }}
           TITLE: ${{ steps.pick.outputs.title }}
         run: |
-          set -euo pipefail
-          # `gh release` is idempotent: create-if-missing, then upload all
-          # three tarballs. --clobber overwrites same-name assets so each
-          # release always carries the artifacts from its own build.
-          if ! gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release create "${TAG}" \
-              --title "${TITLE}" \
-              --target "${{ github.sha }}" \
-              --generate-notes \
-              dist/archlinux-base-x86_64.tar.gz \
-              dist/archlinux-base-i686.tar.gz \
-              dist/archlinux-base-aarch64.tar.gz \
-              dist/archlinux-base-riscv64.tar.gz
-          else
-            gh release upload "${TAG}" \
-              --clobber \
-              dist/archlinux-base-x86_64.tar.gz \
-              dist/archlinux-base-i686.tar.gz \
-              dist/archlinux-base-aarch64.tar.gz \
-              dist/archlinux-base-riscv64.tar.gz
+          # Use `set +e` so the retry loop can actually retry; `gh release`
+          # hits GitHub's asset upload endpoint, which occasionally returns
+          # transient HTTP 500s. --clobber overwrites same-name assets so
+          # each release always carries the artifacts from its own build.
+          set +e
+          for attempt in 1 2 3 4 5; do
+            if ! gh release view "${TAG}" >/dev/null 2>&1; then
+              gh release create "${TAG}" \
+                --title "${TITLE}" \
+                --target "${{ github.sha }}" \
+                --generate-notes \
+                dist/archlinux-base-x86_64.tar.gz \
+                dist/archlinux-base-i686.tar.gz \
+                dist/archlinux-base-aarch64.tar.gz \
+                dist/archlinux-base-riscv64.tar.gz && rc=0 || rc=$?
+            else
+              gh release upload "${TAG}" \
+                --clobber \
+                dist/archlinux-base-x86_64.tar.gz \
+                dist/archlinux-base-i686.tar.gz \
+                dist/archlinux-base-aarch64.tar.gz \
+                dist/archlinux-base-riscv64.tar.gz && rc=0 || rc=$?
+            fi
+            [[ ${rc:-1} -eq 0 ]] && break
+            echo "::warning::gh release attempt ${attempt} failed (rc=${rc}); retrying in 30s"
+            sleep 30
+          done
+          if [[ ${rc:-1} -ne 0 ]]; then
+            echo "::error::gh release failed after 5 attempts"
+            exit ${rc}
           fi
           gh release view "${TAG}"
