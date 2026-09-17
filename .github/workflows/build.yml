@@ -33,16 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache pacman packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pacman/pkg
-            cache-x86_64
-          key: pacman-amd64-${{ hashFiles('pkgs/**') }}-${{ hashFiles('rootfs/etc/**') }}
-          restore-keys: |
-            pacman-amd64-
-
       - name: Install pacstrap (arch-install-scripts)
         run: |
           set -euo pipefail
