@@ -33,11 +33,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pacstrap (arch-install-scripts)
+      - name: Install pacstrap (arch-install-scripts) and pacman (static)
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y arch-install-scripts
+          # Ubuntu's pacman-package-manager ships a static pacman binary used
+          # by pacstrap. Versions vary by release; pick whichever is exposed.
+          sudo apt-get install -y --no-install-recommends pacman-package-manager || true
+          if ! command -v pacman >/dev/null; then
+            echo "::warning::pacman-package-manager not in apt; fetching pacman-static from Arch"
+            sudo curl -fsSL -o /usr/local/bin/pacman \
+              https://pkgbuild.com/~morganamilo/pacman-static/x86_64/bin/pacman-static
+            sudo chmod +x /usr/local/bin/pacman
+          fi
+          command -v pacman
+          pacman --version | head -1
 
       - name: Run pacstrap into a tmp rootfs
         run: |
