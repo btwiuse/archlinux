@@ -1,3 +1,4 @@
 archlinux-keyring
 archlinux32-keyring
-archlinuxcn-keyring
+# archlinuxcn-keyring: archlinuxcn repo no longer ships i686 packages
+#archlinuxcn-keyring
