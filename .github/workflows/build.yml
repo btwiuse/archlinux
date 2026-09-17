@@ -64,7 +64,8 @@ jobs:
           echo "---- package count ----"
           ls "$TMPDIR/var/cache/pacman/pkg" 2>/dev/null | wc -l || true
           # stage1: tar | docker import, matching stages:11-13
-          tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
+          # tar runs as root because pacstrap chowns files to root:root
+          sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
               | docker import \
                   --change 'CMD ["/usr/bin/bash"]' \
                   - btwiuse/arch:bootstrap-x86_64
