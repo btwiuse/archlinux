@@ -1,0 +1,6 @@
+archlinux-keyring
+# archlinuxarm-keyring: riscv64 is a tier-1 arch upstream, not Arch Linux ARM
+#archlinuxarm-keyring
+archlinuxcn-keyring
+# blackarch-keyring: blackarch does not currently publish riscv64 packages
+#blackarch-keyring

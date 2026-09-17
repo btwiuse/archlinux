@@ -5,4 +5,5 @@ i686
 # armv6h
 # armv7h
 aarch64
+riscv64
 EOF

@@ -40,6 +40,9 @@ jobs:
           - arch: aarch64
             bootstrap_conf: pacman-bootstrap-aarch64.conf
             qemu: true
+          - arch: riscv64
+            bootstrap_conf: pacman-bootstrap-riscv64.conf
+            qemu: true
     steps:
       - uses: actions/checkout@v4
 
@@ -213,7 +216,7 @@ jobs:
           set -euo pipefail
           REPO="ghcr.io/${OWNER}/arch"
           # Pull the per-arch images into the local manifest store
-          for arch in x86_64 i686 aarch64; do
+          for arch in x86_64 i686 aarch64 riscv64; do
             docker pull "${REPO}:base-${arch}"
           done
 
@@ -223,10 +226,12 @@ jobs:
             docker manifest create "${REPO}:${TARGET}" \
               --amend "${REPO}:${TAG}-x86_64" \
               --amend "${REPO}:${TAG}-i686" \
-              --amend "${REPO}:${TAG}-aarch64"
+              --amend "${REPO}:${TAG}-aarch64" \
+              --amend "${REPO}:${TAG}-riscv64"
             docker manifest annotate --os linux --arch amd64          "${REPO}:${TARGET}" "${REPO}:${TAG}-x86_64"
             docker manifest annotate --os linux --arch 386            "${REPO}:${TARGET}" "${REPO}:${TAG}-i686"
             docker manifest annotate --os linux --arch arm64 --variant v8 "${REPO}:${TARGET}" "${REPO}:${TAG}-aarch64"
+            docker manifest annotate --os linux --arch riscv64        "${REPO}:${TARGET}" "${REPO}:${TAG}-riscv64"
             docker manifest push "${REPO}:${TARGET}"
           }
 
@@ -241,24 +246,30 @@ jobs:
             docker pull "${REPO}:base-x86_64" && docker tag "${REPO}:base-x86_64" "${HUB}:base-x86_64"
             docker pull "${REPO}:base-i686"   && docker tag "${REPO}:base-i686"   "${HUB}:base-i686"
             docker pull "${REPO}:base-aarch64" && docker tag "${REPO}:base-aarch64" "${HUB}:base-aarch64"
+            docker pull "${REPO}:base-riscv64" && docker tag "${REPO}:base-riscv64" "${HUB}:base-riscv64"
             docker push "${HUB}:base-x86_64"
             docker push "${HUB}:base-i686"
             docker push "${HUB}:base-aarch64"
+            docker push "${HUB}:base-riscv64"
             docker manifest create "${HUB}:base" \
               --amend "${HUB}:base-x86_64" \
               --amend "${HUB}:base-i686" \
-              --amend "${HUB}:base-aarch64"
+              --amend "${HUB}:base-aarch64" \
+              --amend "${HUB}:base-riscv64"
             docker manifest annotate --os linux --arch amd64            "${HUB}:base" "${HUB}:base-x86_64"
             docker manifest annotate --os linux --arch 386              "${HUB}:base" "${HUB}:base-i686"
             docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:base" "${HUB}:base-aarch64"
+            docker manifest annotate --os linux --arch riscv64          "${HUB}:base" "${HUB}:base-riscv64"
             docker manifest push "${HUB}:base"
             docker manifest create "${HUB}:latest" \
               --amend "${HUB}:base-x86_64" \
               --amend "${HUB}:base-i686" \
-              --amend "${HUB}:base-aarch64"
+              --amend "${HUB}:base-aarch64" \
+              --amend "${HUB}:base-riscv64"
             docker manifest annotate --os linux --arch amd64            "${HUB}:latest" "${HUB}:base-x86_64"
             docker manifest annotate --os linux --arch 386              "${HUB}:latest" "${HUB}:base-i686"
             docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:latest" "${HUB}:base-aarch64"
+            docker manifest annotate --os linux --arch riscv64          "${HUB}:latest" "${HUB}:base-riscv64"
             docker manifest push "${HUB}:latest"
           else
             echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; skipping Docker Hub publish"
@@ -296,6 +307,7 @@ jobs:
           test -f dist/archlinux-base-x86_64.tar.gz
           test -f dist/archlinux-base-i686.tar.gz
           test -f dist/archlinux-base-aarch64.tar.gz
+          test -f dist/archlinux-base-riscv64.tar.gz
 
       - name: Pick release tag
         id: pick
@@ -345,12 +357,14 @@ jobs:
               --generate-notes \
               dist/archlinux-base-x86_64.tar.gz \
               dist/archlinux-base-i686.tar.gz \
-              dist/archlinux-base-aarch64.tar.gz
+              dist/archlinux-base-aarch64.tar.gz \
+              dist/archlinux-base-riscv64.tar.gz
           else
             gh release upload "${TAG}" \
               --clobber \
               dist/archlinux-base-x86_64.tar.gz \
               dist/archlinux-base-i686.tar.gz \
-              dist/archlinux-base-aarch64.tar.gz
+              dist/archlinux-base-aarch64.tar.gz \
+              dist/archlinux-base-riscv64.tar.gz
           fi
           gh release view "${TAG}"
