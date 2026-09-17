@@ -172,18 +172,68 @@ jobs:
           docker push "ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
           docker push "ghcr.io/${OWNER}/arch:base-${ARCH}"
 
-      - name: Upload rootfs tarball for release job
-        env:
-          ARCH: ${{ matrix.arch }}
-        run: |
-          ls -la dist/
-
       - uses: actions/upload-artifact@v4
         with:
           name: rootfs-${{ matrix.arch }}
           path: dist/archlinux-base-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 14
+
+      # Publish this arch's rootfs tarball directly to a GitHub Release.
+      # Multiple bootstrap jobs (one per arch) race to create the same
+      # release tag; the first one to find it missing runs `gh release
+      # create`, the rest fall through to `gh release upload --clobber`.
+      # --clobber guarantees every arch's tarball ends up on the release
+      # even if a previous run only partially succeeded.
+      - name: Publish rootfs tarball to GitHub Releases
+        if: github.event_name != 'pull_request'
+        env:
+          ARCH: ${{ matrix.arch }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          SHORT_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          short="${SHORT_SHA:0:7}"
+          case "${EVENT_NAME}" in
+            push)
+              if [[ "${GITHUB_REF_TYPE:-}" == "tag" || "${REF_NAME}" =~ ^v?[0-9] ]]; then
+                TAG="${REF_NAME}"; TITLE="${REF_NAME}"
+              else
+                TAG="rootfs-${short}"; TITLE="rootfs ${short}"
+              fi
+              ;;
+            workflow_dispatch)
+              TAG="manual-${short}"; TITLE="manual ${short}"
+              ;;
+            *)
+              echo "::error::unsupported event ${EVENT_NAME}"; exit 1;;
+          esac
+          TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
+          for attempt in 1 2 3 4 5; do
+            if gh release view "${TAG}" >/dev/null 2>&1; then
+              gh release upload "${TAG}" --clobber "${TARBALL}" && rc=0 || rc=$?
+            else
+              # First arch to reach this point creates the release with its
+              # own tarball; later arch jobs (and re-runs) upload via the
+              # `release upload` branch above.
+              gh release create "${TAG}" \
+                --title "${TITLE}" \
+                --target "${SHORT_SHA}" \
+                --generate-notes \
+                "${TARBALL}" && rc=0 || rc=$?
+            fi
+            [[ ${rc:-1} -eq 0 ]] && break
+            echo "::warning::gh release attempt ${attempt} (arch=${ARCH}) rc=${rc}; retrying in 30s"
+            sleep 30
+          done
+          if [[ ${rc:-1} -ne 0 ]]; then
+            echo "::error::gh release failed for arch=${ARCH} after 5 attempts"
+            exit ${rc}
+          fi
+          gh release view "${TAG}" --json tagName,assets \
+            --jq '.tagName + " assets: " + ([.assets[].name] | join(", "))'
 
   # ----------------------------------------------------------------------
   # After all three arches have produced :base-$ARCH images, create a
@@ -275,106 +325,3 @@ jobs:
             echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; skipping Docker Hub publish"
           fi
 
-  # ----------------------------------------------------------------------
-  # Publish per-arch rootfs tarballs to GitHub Releases.
-  #
-  # Tag naming:
-  #   - push on master         -> "rootfs-<short-sha>"  (every-commit archive)
-  #   - tag push (user-driven) -> "${{ github.ref_name }}" (formal release)
-  #   - workflow_dispatch      -> "manual-<short-sha>"
-  #
-  # Each release gets the three arch tarballs as separate assets.
-  # ----------------------------------------------------------------------
-  release:
-    name: publish rootfs tarballs -> GitHub Releases
-    needs: bootstrap
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: Verify tarballs are present
-        run: |
-          set -euo pipefail
-          ls -la dist/
-          test -f dist/archlinux-base-x86_64.tar.gz
-          test -f dist/archlinux-base-i686.tar.gz
-          test -f dist/archlinux-base-aarch64.tar.gz
-          test -f dist/archlinux-base-riscv64.tar.gz
-
-      - name: Pick release tag
-        id: pick
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-          SHORT_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          short="${SHORT_SHA:0:7}"
-          case "${EVENT_NAME}" in
-            push)
-              # For a tag push, use the tag name as the release tag;
-              # for a branch push, archive under rootfs-<sha>.
-              if [[ "${GITHUB_REF_TYPE:-}" == "tag" || "${REF_NAME}" =~ ^v?[0-9] ]]; then
-                TAG="${REF_NAME}"
-                TITLE="${REF_NAME}"
-              else
-                TAG="rootfs-${short}"
-                TITLE="rootfs ${short}"
-              fi
-              ;;
-            workflow_dispatch)
-              TAG="manual-${short}"
-              TITLE="manual ${short}"
-              ;;
-            *)
-              echo "::error::unsupported event ${EVENT_NAME}"; exit 1;;
-          esac
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "title=${TITLE}" >> "$GITHUB_OUTPUT"
-
-      - name: Create or update release and upload tarballs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.pick.outputs.tag }}
-          TITLE: ${{ steps.pick.outputs.title }}
-        run: |
-          # Use `set +e` so the retry loop can actually retry; `gh release`
-          # hits GitHub's asset upload endpoint, which occasionally returns
-          # transient HTTP 500s. --clobber overwrites same-name assets so
-          # each release always carries the artifacts from its own build.
-          set +e
-          for attempt in 1 2 3 4 5; do
-            if ! gh release view "${TAG}" >/dev/null 2>&1; then
-              gh release create "${TAG}" \
-                --title "${TITLE}" \
-                --target "${{ github.sha }}" \
-                --generate-notes \
-                dist/archlinux-base-x86_64.tar.gz \
-                dist/archlinux-base-i686.tar.gz \
-                dist/archlinux-base-aarch64.tar.gz \
-                dist/archlinux-base-riscv64.tar.gz && rc=0 || rc=$?
-            else
-              gh release upload "${TAG}" \
-                --clobber \
-                dist/archlinux-base-x86_64.tar.gz \
-                dist/archlinux-base-i686.tar.gz \
-                dist/archlinux-base-aarch64.tar.gz \
-                dist/archlinux-base-riscv64.tar.gz && rc=0 || rc=$?
-            fi
-            [[ ${rc:-1} -eq 0 ]] && break
-            echo "::warning::gh release attempt ${attempt} failed (rc=${rc}); retrying in 30s"
-            sleep 30
-          done
-          if [[ ${rc:-1} -ne 0 ]]; then
-            echo "::error::gh release failed after 5 attempts"
-            exit ${rc}
-          fi
-          gh release view "${TAG}"
