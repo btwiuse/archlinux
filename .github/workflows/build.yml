@@ -160,3 +160,85 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           docker push "ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
           docker push "ghcr.io/${OWNER}/arch:base-${ARCH}"
+
+  # ----------------------------------------------------------------------
+  # After all three arches have produced :base-$ARCH images, create a
+  # multi-arch manifest list :base (and :latest) and push it to GHCR.
+  # Mirrors ./push's old Docker Hub manifest behavior.
+  # ----------------------------------------------------------------------
+  manifest:
+    name: multi-arch manifest -> ghcr.io
+    needs: bootstrap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (needed for pulling non-native arches)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push manifest list :base :latest
+        env:
+          OWNER: ${{ github.repository_owner }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="ghcr.io/${OWNER}/arch"
+          # Pull the per-arch images into the local manifest store
+          for arch in x86_64 i686 aarch64; do
+            docker pull "${REPO}:base-${arch}"
+          done
+
+          push_manifest(){
+            local TAG="$1"
+            local TARGET="${2:-$1}"
+            docker manifest create "${REPO}:${TARGET}" \
+              --amend "${REPO}:${TAG}-x86_64" \
+              --amend "${REPO}:${TAG}-i686" \
+              --amend "${REPO}:${TAG}-aarch64"
+            docker manifest annotate --os linux --arch amd64          "${REPO}:${TARGET}" "${REPO}:${TAG}-x86_64"
+            docker manifest annotate --os linux --arch 386            "${REPO}:${TARGET}" "${REPO}:${TAG}-i686"
+            docker manifest annotate --os linux --arch arm64 --variant v8 "${REPO}:${TARGET}" "${REPO}:${TAG}-aarch64"
+            docker manifest push "${REPO}:${TARGET}"
+          }
+
+          push_manifest base
+          push_manifest base latest
+
+          # Optional: also push the same manifest lists to Docker Hub if
+          # DOCKERHUB_USERNAME/DOCKERHUB_TOKEN are configured.
+          if [[ -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
+            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+            HUB="btwiuse/arch"
+            docker pull "${REPO}:base-x86_64" && docker tag "${REPO}:base-x86_64" "${HUB}:base-x86_64"
+            docker pull "${REPO}:base-i686"   && docker tag "${REPO}:base-i686"   "${HUB}:base-i686"
+            docker pull "${REPO}:base-aarch64" && docker tag "${REPO}:base-aarch64" "${HUB}:base-aarch64"
+            docker push "${HUB}:base-x86_64"
+            docker push "${HUB}:base-i686"
+            docker push "${HUB}:base-aarch64"
+            docker manifest create "${HUB}:base" \
+              --amend "${HUB}:base-x86_64" \
+              --amend "${HUB}:base-i686" \
+              --amend "${HUB}:base-aarch64"
+            docker manifest annotate --os linux --arch amd64            "${HUB}:base" "${HUB}:base-x86_64"
+            docker manifest annotate --os linux --arch 386              "${HUB}:base" "${HUB}:base-i686"
+            docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:base" "${HUB}:base-aarch64"
+            docker manifest push "${HUB}:base"
+            docker manifest create "${HUB}:latest" \
+              --amend "${HUB}:base-x86_64" \
+              --amend "${HUB}:base-i686" \
+              --amend "${HUB}:base-aarch64"
+            docker manifest annotate --os linux --arch amd64            "${HUB}:latest" "${HUB}:base-x86_64"
+            docker manifest annotate --os linux --arch 386              "${HUB}:latest" "${HUB}:base-i686"
+            docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:latest" "${HUB}:base-aarch64"
+            docker manifest push "${HUB}:latest"
+          else
+            echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; skipping Docker Hub publish"
+          fi
