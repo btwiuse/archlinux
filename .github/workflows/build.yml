@@ -174,8 +174,6 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           ls -la dist/
-          # Re-emit the tarball with consistent permissions for upload.
-          chmod 0644 dist/archlinux-base-${ARCH}.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
