@@ -23,9 +23,22 @@ permissions:
   packages: write
 
 jobs:
-  bootstrap-amd64:
-    name: bootstrap amd64 -> ghcr.io
+  bootstrap:
+    name: ${{ matrix.arch }} -> ghcr.io
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            bootstrap_conf: pacman-bootstrap-x86_64.conf
+            qemu: false
+          - arch: i686
+            bootstrap_conf: pacman-bootstrap-i686.conf
+            qemu: true
+          - arch: aarch64
+            bootstrap_conf: pacman-bootstrap-aarch64.conf
+            qemu: true
     steps:
       - uses: actions/checkout@v4
 
@@ -44,16 +57,22 @@ jobs:
           command -v pacman
           pacman --version | head -1
 
+      - name: Set up QEMU (non-native arches only)
+        if: ${{ matrix.qemu }}
+        uses: docker/setup-qemu-action@v3
+
       - name: "stage1: pacstrap + tar + docker import"
+        env:
+          ARCH: ${{ matrix.arch }}
+          BOOTSTRAP_CONF: ${{ matrix.bootstrap_conf }}
         run: |
           set -euo pipefail
-          ARCH=x86_64
           OWNER="${{ github.repository_owner }}"
           IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
           TMPDIR=$(mktemp -d)
           export PKGDIR=$HOME/.cache/pacman/pkg
           mkdir -p "$PKGDIR"
-          sudo -E pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -G -M "$TMPDIR" $(./packages bootstrap)
+          sudo -E pacstrap -C "rootfs/etc/${BOOTSTRAP_CONF}" -c -G -M "$TMPDIR" $(./packages bootstrap)
           sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
               | docker import \
                   --change 'CMD ["/usr/bin/bash"]' \
@@ -68,7 +87,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push bootstrap image to ghcr.io
+      - name: Push bootstrap image
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
           OWNER="${{ github.repository_owner }}"
-          docker push "ghcr.io/${OWNER}/arch:bootstrap-x86_64"
+          docker push "ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
