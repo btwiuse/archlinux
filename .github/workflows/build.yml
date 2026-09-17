@@ -20,15 +20,19 @@ on:
 
 permissions:
   contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/arch
 
 jobs:
   # ----------------------------------------------------------------------
-  # Smoke test: prove the runner can run pacstrap + docker import for the
-  # native arch (linux/amd64) without pushing anything. This is the smallest
-  # end-to-end check of the build pipeline.
+  # Build amd64 bootstrap image on a fresh Ubuntu runner, then publish to
+  # GitHub Container Registry using the workflow's GITHUB_TOKEN.
   # ----------------------------------------------------------------------
-  smoke-amd64:
-    name: smoke (amd64, no push)
+  bootstrap-amd64:
+    name: bootstrap amd64 -> ghcr.io
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +42,6 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y arch-install-scripts
-          # Ubuntu's pacman-package-manager ships a static pacman binary used
-          # by pacstrap. Versions vary by release; pick whichever is exposed.
           sudo apt-get install -y --no-install-recommends pacman-package-manager || true
           if ! command -v pacman >/dev/null; then
             echo "::warning::pacman-package-manager not in apt; fetching pacman-static from Arch"
@@ -50,26 +52,28 @@ jobs:
           command -v pacman
           pacman --version | head -1
 
-      - name: Run pacstrap into a tmp rootfs
+      - name: stage1: pacstrap + tar + docker import
         run: |
           set -euo pipefail
+          ARCH=x86_64
           TMPDIR=$(mktemp -d)
-          export TMPDIR ARCH=x86_64 PKGDIR=$HOME/.cache/pacman/pkg
+          export PKGDIR=$HOME/.cache/pacman/pkg
           mkdir -p "$PKGDIR"
-          # pacstrap runs on the Ubuntu runner via arch-install-scripts;
-          # mirrorlist comes from rootfs/etc/pacman.d/mirrorlist
-          sudo -E pacstrap -C rootfs/etc/pacman-bootstrap-x86_64.conf -c -G -M "$TMPDIR" $(./packages bootstrap)
-          echo "---- rootfs contents (top) ----"
-          ls "$TMPDIR" | head -30
-          echo "---- package count ----"
-          ls "$TMPDIR/var/cache/pacman/pkg" 2>/dev/null | wc -l || true
-          # stage1: tar | docker import, matching stages:11-13
-          # tar runs as root because pacstrap chowns files to root:root
+          sudo -E pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -G -M "$TMPDIR" $(./packages bootstrap)
           sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
               | docker import \
                   --change 'CMD ["/usr/bin/bash"]' \
-                  - btwiuse/arch:bootstrap-x86_64
+                  - "${IMAGE_PREFIX}:bootstrap-${ARCH}"
           sudo rm -rf "$TMPDIR"
+          docker images "${IMAGE_PREFIX}"
 
-      - name: Show resulting image
-        run: docker images btwiuse/arch
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push bootstrap image to ghcr.io
+        run: |
+          docker push "${IMAGE_PREFIX}:bootstrap-x86_64"
