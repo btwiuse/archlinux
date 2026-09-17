@@ -1,0 +1,73 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/**'
+      - 'pkgs/**'
+      - 'rootfs/**'
+      - 'stages'
+      - 'packages'
+      - 'push'
+      - 'pull'
+      - 'keyrings'
+      - 'users'
+      - 'groups'
+      - 'exclude'
+      - 'archs'
+
+permissions:
+  contents: read
+
+jobs:
+  # ----------------------------------------------------------------------
+  # Smoke test: prove the runner can run pacstrap + docker import for the
+  # native arch (linux/amd64) without pushing anything. This is the smallest
+  # end-to-end check of the build pipeline.
+  # ----------------------------------------------------------------------
+  smoke-amd64:
+    name: smoke (amd64, no push)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache pacman packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pacman/pkg
+            cache-x86_64
+          key: pacman-amd64-${{ hashFiles('pkgs/**', 'rootfs/**') }}
+          restore-keys: |
+            pacman-amd64-
+
+      - name: Install pacstrap (arch-install-scripts)
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y arch-install-scripts
+
+      - name: Run pacstrap into a tmp rootfs
+        run: |
+          set -euo pipefail
+          TMPDIR=$(mktemp -d)
+          export TMPDIR ARCH=x86_64 PKGDIR=$HOME/.cache/pacman/pkg
+          mkdir -p "$PKGDIR"
+          # pacstrap runs on the Ubuntu runner via arch-install-scripts;
+          # mirrorlist comes from rootfs/etc/pacman.d/mirrorlist
+          sudo -E pacstrap -C rootfs/etc/pacman-bootstrap-x86_64.conf -c -G -M "$TMPDIR" $(./packages bootstrap)
+          echo "---- rootfs contents (top) ----"
+          ls "$TMPDIR" | head -30
+          echo "---- package count ----"
+          ls "$TMPDIR/var/cache/pacman/pkg" 2>/dev/null | wc -l || true
+          # stage1: tar | docker import, matching stages:11-13
+          tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
+              | docker import \
+                  --change 'CMD ["/usr/bin/bash"]' \
+                  - btwiuse/arch:bootstrap-x86_64
+          rm -rf "$TMPDIR"
+
+      - name: Show resulting image
+        run: docker images btwiuse/arch
