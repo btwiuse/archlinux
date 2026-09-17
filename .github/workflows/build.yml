@@ -69,7 +69,7 @@ jobs:
               | docker import \
                   --change 'CMD ["/usr/bin/bash"]' \
                   - btwiuse/arch:bootstrap-x86_64
-          rm -rf "$TMPDIR"
+          sudo rm -rf "$TMPDIR"
 
       - name: Show resulting image
         run: docker images btwiuse/arch
