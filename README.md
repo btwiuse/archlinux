@@ -7,12 +7,12 @@
 
 Multi-arch Arch Linux Docker base images, built and published by GitHub Actions.
 
-| Arch | Bootstrap tag | Base tag | Notes |
+| Arch | GHCR | Docker Hub | Notes |
 |---|---|---|---|
-| `x86_64` | `bootstrap-x86_64` | `base-x86_64` | upstream Arch Linux |
-| `i686` | `bootstrap-i686` | `base-i686` | Arch Linux 32 (`mirror.archlinux32.org`) |
-| `aarch64` | `bootstrap-aarch64` | `base-aarch64` | Arch Linux ARM |
-| `riscv64` | `bootstrap-riscv64` | `base-riscv64` | Arch Linux RISC-V (`riscv.mirror.pkgbuild.com`) |
+| `x86_64` | `ghcr.io/btwiuse/arch:base-x86_64` / `:bootstrap-x86_64` | `btwiuse/arch:base-x86_64` / `:bootstrap-x86_64` | upstream Arch Linux |
+| `i686` | `ghcr.io/btwiuse/arch:base-i686` / `:bootstrap-i686` | `btwiuse/arch:base-i686` / `:bootstrap-i686` | Arch Linux 32 (`mirror.archlinux32.org`) |
+| `aarch64` | `ghcr.io/btwiuse/arch:base-aarch64` / `:bootstrap-aarch64` | `btwiuse/arch:base-aarch64` / `:bootstrap-aarch64` | Arch Linux ARM |
+| `riscv64` | `ghcr.io/btwiuse/arch:base-riscv64` / `:bootstrap-riscv64` | `btwiuse/arch:base-riscv64` / `:bootstrap-riscv64` | Arch Linux RISC-V (`riscv.mirror.pkgbuild.com`) |
 
 A multi-arch manifest list `:base` (and `:latest`) is published to both `ghcr.io/btwiuse/arch` and `btwiuse/arch` on Docker Hub, so `docker run --platform linux/amd64|linux/arm64 ... ghcr.io/btwiuse/arch:base` picks the right image automatically.
 
@@ -35,21 +35,43 @@ Pin to a specific arch with `--platform` if needed.
 
 ### Pull a per-arch image
 
+Each arch ships as its own tag in both `ghcr.io/btwiuse/arch` and `btwiuse/arch` (Docker Hub). Pick the exact image instead of relying on the multi-arch manifest list:
+
 ```
+# base image (stage3: packages installed, users/locale/sudoers set up)
 docker pull ghcr.io/btwiuse/arch:base-x86_64
+docker pull ghcr.io/btwiuse/arch:base-i686
 docker pull ghcr.io/btwiuse/arch:base-aarch64
+docker pull ghcr.io/btwiuse/arch:base-riscv64
+
+# bootstrap image (stage1: pacstrap output, no package install)
+docker pull ghcr.io/btwiuse/arch:bootstrap-x86_64
+docker pull ghcr.io/btwiuse/arch:bootstrap-i686
+docker pull ghcr.io/btwiuse/arch:bootstrap-aarch64
+docker pull ghcr.io/btwiuse/arch:bootstrap-riscv64
+
+# same set is mirrored to Docker Hub
+docker pull btwiuse/arch:base-x86_64
+docker pull btwiuse/arch:bootstrap-x86_64
+# ...
 ```
 
 ### Use a rootfs tarball from a release
 
-Each CI run publishes a `rootfs-<short-sha>` release containing per-arch tarballs:
+Each CI run publishes a `rootfs-<short-sha>` release with two tarballs per arch: one for the bootstrap filesystem and one for the committed base image.
 
 ```
+# bootstrap: drop-in for `docker import`, same content as :bootstrap-<arch>
+curl -L https://github.com/btwiuse/archlinux/releases/download/rootfs-<sha>/archlinux-bootstrap-x86_64.tar.gz \
+  | docker import - btwiuse/arch:bootstrap-local
+
+# base: flattened filesystem of the committed :base-<arch> image
 curl -L https://github.com/btwiuse/archlinux/releases/download/rootfs-<sha>/archlinux-base-x86_64.tar.gz \
-  | docker import - btwiuse/arch:local
-```
+  | docker import - btwiuse/arch:base-local
 
-The tarball is a faithful on-disk representation of the image (same exclude rules as `docker import`).
+# or extract as a chroot (works for either tarball)
+tar -xzf archlinux-bootstrap-x86_64.tar.gz -C /var/lib/mychroot
+```
 
 ## Building locally
 
