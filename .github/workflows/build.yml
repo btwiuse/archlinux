@@ -24,7 +24,7 @@ permissions:
   packages: write
 
 env:
-  PKGDIR: ${{ runner.home }}/.cache/pacman/pkg
+  PKGDIR: /home/runner/.cache/pacman/pkg
 
 jobs:
   bootstrap:
