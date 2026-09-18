@@ -23,6 +23,9 @@ permissions:
   contents: write
   packages: write
 
+env:
+  PKGDIR: ${{ runner.home }}/.cache/pacman/pkg
+
 jobs:
   bootstrap:
     name: ${{ matrix.arch }} -> ghcr.io
@@ -45,6 +48,14 @@ jobs:
             qemu: true
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache pacman packages between runs
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PKGDIR }}
+          key: pacman-${{ matrix.arch }}-${{ hashFiles('pkgs/common/keyring', 'pkgs/common/base', 'pkgs/archlinux-bootstrap-packages', 'rootfs/etc/pacman-bootstrap-${{ matrix.bootstrap_conf }}') }}
+          restore-keys: |
+            pacman-${{ matrix.arch }}-
 
       - name: Install pacstrap (arch-install-scripts) and pacman (static)
         run: |
@@ -75,7 +86,7 @@ jobs:
           IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
           TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
           TMPDIR=$(mktemp -d)
-          export PKGDIR=$HOME/.cache/pacman/pkg
+          export PKGDIR="${PKGDIR}"
           mkdir -p "$PKGDIR" dist
           sudo -E pacstrap -C "rootfs/etc/${BOOTSTRAP_CONF}" -c -G -M "$TMPDIR" $(./packages bootstrap)
           # Produce a gzip-compressed rootfs tarball for downstream consumers.
@@ -99,12 +110,12 @@ jobs:
           set -euo pipefail
           OWNER="${{ github.repository_owner }}"
           BOOTSTRAP_IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
-          mkdir -p "$HOME/.cache/pacman/pkg"
+          mkdir -p "${PKGDIR}"
           CONTAINER_NAME="stage2-${ARCH}-$(mktemp -u XXXXXXXX | tr '[:upper:]' '[:lower:]')"
           docker run -i \
               --name "$CONTAINER_NAME" \
               -v "$PWD:/root/arch" \
-              -v "$HOME/.cache/pacman/pkg:/var/cache/pacman/pkg" \
+              -v "${PKGDIR}:/var/cache/pacman/pkg" \
               -e LC_ALL=C \
               -e VARIANT="${VARIANT}" \
               -e ARCH="${ARCH}" \
