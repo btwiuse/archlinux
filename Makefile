@@ -14,7 +14,7 @@ build:
 ci-build: build
 
 push-images:
-	ARCH=$(ARCH) IMAGE=$(IMAGE) ./.github/scripts/push-images.sh
+	ARCH=$(ARCH) IMAGE=$(IMAGE) bash ./.github/scripts/push-images.sh
 
 syntax-check:
 	bash -n .github/scripts/driver.sh
