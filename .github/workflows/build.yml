@@ -84,7 +84,7 @@ jobs:
           set -euo pipefail
           OWNER="${{ github.repository_owner }}"
           IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
-          TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
+          TARBALL="dist/archlinux-bootstrap-${ARCH}.tar.gz"
           TMPDIR=$(mktemp -d)
           export PKGDIR="${PKGDIR}"
           mkdir -p "$PKGDIR" dist
@@ -167,6 +167,17 @@ jobs:
               "$CONTAINER_ID" "$IMAGE"
           docker rm "$CONTAINER_ID"
           docker images "$IMAGE"
+          # Export the committed base image's filesystem as a rootfs
+          # tarball. `docker export` returns a flat tar of the merged
+          # filesystem (no layer metadata), gzip-compressed to match the
+          # bootstrap tarball's format. The resulting tarball is a
+          # drop-in for `docker import` and can be extracted directly
+          # as a chroot.
+          BASE_TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
+          EXPORTER=$(docker create "$IMAGE")
+          sudo docker export "$EXPORTER" | sudo gzip > "$BASE_TARBALL"
+          docker rm "$EXPORTER"
+          ls -la dist/
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -185,8 +196,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: rootfs-${{ matrix.arch }}
-          path: dist/archlinux-base-${{ matrix.arch }}.tar.gz
+          name: rootfs-bootstrap-${{ matrix.arch }}
+          path: dist/archlinux-bootstrap-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           retention-days: 14
 
@@ -221,19 +232,20 @@ jobs:
             *)
               echo "::error::unsupported event ${EVENT_NAME}"; exit 1;;
           esac
-          TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
+          TARBALL="dist/archlinux-bootstrap-${ARCH}.tar.gz"
+          BASE_TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
           for attempt in 1 2 3 4 5; do
             if gh release view "${TAG}" >/dev/null 2>&1; then
-              gh release upload "${TAG}" --clobber "${TARBALL}" && rc=0 || rc=$?
+              gh release upload "${TAG}" --clobber "${TARBALL}" "${BASE_TARBALL}" && rc=0 || rc=$?
             else
               # First arch to reach this point creates the release with its
-              # own tarball; later arch jobs (and re-runs) upload via the
+              # own tarballs; later arch jobs (and re-runs) upload via the
               # `release upload` branch above.
               gh release create "${TAG}" \
                 --title "${TITLE}" \
                 --target "${SHORT_SHA}" \
                 --generate-notes \
-                "${TARBALL}" && rc=0 || rc=$?
+                "${TARBALL}" "${BASE_TARBALL}" && rc=0 || rc=$?
             fi
             [[ ${rc:-1} -eq 0 ]] && break
             echo "::warning::gh release attempt ${attempt} (arch=${ARCH}) rc=${rc}; retrying in 30s"
@@ -280,6 +292,7 @@ jobs:
           set -euo pipefail
           REPO="ghcr.io/${OWNER}/arch"
           for arch in x86_64 i686 aarch64 riscv64; do
+            docker pull "${REPO}:bootstrap-${arch}"
             docker pull "${REPO}:base-${arch}"
           done
 
@@ -300,43 +313,34 @@ jobs:
 
           push_manifest base
           push_manifest base latest
+          push_manifest bootstrap
 
           if [[ -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
             echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
             HUB="btwiuse/arch"
-            docker pull "${REPO}:base-x86_64" && docker tag "${REPO}:base-x86_64" "${HUB}:base-x86_64"
-            docker pull "${REPO}:base-i686"   && docker tag "${REPO}:base-i686"   "${HUB}:base-i686"
-            docker pull "${REPO}:base-aarch64" && docker tag "${REPO}:base-aarch64" "${HUB}:base-aarch64"
-            docker pull "${REPO}:base-riscv64" && docker tag "${REPO}:base-riscv64" "${HUB}:base-riscv64"
-            docker push "${HUB}:base-x86_64"
-            docker push "${HUB}:base-i686"
-            docker push "${HUB}:base-aarch64"
-            docker push "${HUB}:base-riscv64"
-            docker manifest create "${HUB}:base" \
-              --amend "${HUB}:base-x86_64" \
-              --amend "${HUB}:base-i686" \
-              --amend "${HUB}:base-aarch64" \
-              --amend "${HUB}:base-riscv64"
-            docker manifest annotate --os linux --arch amd64            "${HUB}:base" "${HUB}:base-x86_64"
-            docker manifest annotate --os linux --arch 386              "${HUB}:base" "${HUB}:base-i686"
-            docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:base" "${HUB}:base-aarch64"
-            docker manifest annotate --os linux --arch riscv64          "${HUB}:base" "${HUB}:base-riscv64"
-            docker manifest push "${HUB}:base"
-            docker manifest create "${HUB}:latest" \
-              --amend "${HUB}:base-x86_64" \
-              --amend "${HUB}:base-i686" \
-              --amend "${HUB}:base-aarch64" \
-              --amend "${HUB}:base-riscv64"
-            docker manifest annotate --os linux --arch amd64            "${HUB}:latest" "${HUB}:base-x86_64"
-            docker manifest annotate --os linux --arch 386              "${HUB}:latest" "${HUB}:base-i686"
-            docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:latest" "${HUB}:base-aarch64"
-            docker manifest annotate --os linux --arch riscv64          "${HUB}:latest" "${HUB}:base-riscv64"
-            docker manifest push "${HUB}:latest"
+            for v in bootstrap base; do
+              for arch in x86_64 i686 aarch64 riscv64; do
+                docker pull "${REPO}:${v}-${arch}" && docker tag "${REPO}:${v}-${arch}" "${HUB}:${v}-${arch}"
+                docker push "${HUB}:${v}-${arch}"
+              done
+              for m in "$v" latest; do
+                docker manifest create "${HUB}:${m}" \
+                  --amend "${HUB}:${v}-x86_64" \
+                  --amend "${HUB}:${v}-i686" \
+                  --amend "${HUB}:${v}-aarch64" \
+                  --amend "${HUB}:${v}-riscv64"
+                docker manifest annotate --os linux --arch amd64            "${HUB}:${m}" "${HUB}:${v}-x86_64"
+                docker manifest annotate --os linux --arch 386              "${HUB}:${m}" "${HUB}:${v}-i686"
+                docker manifest annotate --os linux --arch arm64 --variant v8 "${HUB}:${m}" "${HUB}:${v}-aarch64"
+                docker manifest annotate --os linux --arch riscv64          "${HUB}:${m}" "${HUB}:${v}-riscv64"
+                docker manifest push "${HUB}:${m}"
+              done
+            done
           else
             echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; skipping Docker Hub publish"
           fi
 
-      - name: Verify multi-arch manifest contains all four arches
+      - name: Verify multi-arch manifests contain all four arches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: ${{ github.repository_owner }}
@@ -345,9 +349,12 @@ jobs:
           TOKEN=$(curl -fsS -u "${OWNER}:${GH_TOKEN}" \
             "https://ghcr.io/token?service=ghcr.io&scope=repository:${OWNER}/arch:pull" \
             | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])")
-          MANIFEST=$(curl -fsS \
-            -H "Authorization: Bearer ${TOKEN}" \
-            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json" \
-            "https://ghcr.io/v2/${OWNER}/arch/manifests/base")
-          echo "$MANIFEST" | python3 "${GITHUB_WORKSPACE}/.github/scripts/verify-manifest.py"
+          for tag in bootstrap base; do
+            echo "===== ${tag} ====="
+            MANIFEST=$(curl -fsS \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json" \
+              "https://ghcr.io/v2/${OWNER}/arch/manifests/${tag}")
+            echo "$MANIFEST" | python3 "${GITHUB_WORKSPACE}/.github/scripts/verify-manifest.py" ":${tag}"
+          done
 
