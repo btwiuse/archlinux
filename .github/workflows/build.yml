@@ -201,6 +201,13 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-base-${{ matrix.arch }}
+          path: dist/archlinux-base-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
       # Publish this arch's rootfs tarball directly to a GitHub Release.
       # Multiple bootstrap jobs (one per arch) race to create the same
       # release tag; the first one to find it missing runs `gh release
