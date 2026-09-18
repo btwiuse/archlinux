@@ -54,7 +54,7 @@ docker run -i \
     -e VARIANT="${VARIANT}" \
     -e ARCH="${ARCH}" \
     "${IMAGE}:bootstrap-${ARCH}" \
-    bash "${SCRIPT_DIR}/stage2-inner.sh"
+    bash /root/arch/.github/scripts/stage2-inner.sh
 
 # ---------- stage3: docker commit + docker export | gzip
 ARCH="$ARCH" \
