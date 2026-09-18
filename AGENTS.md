@@ -12,6 +12,19 @@ Published destinations:
 * **GitHub Releases** — `rootfs-<short-sha>` with both `archlinux-bootstrap-<arch>.tar.gz` and `archlinux-base-<arch>.tar.gz` per arch
 * **GitHub Actions artifacts** — `rootfs-bootstrap-<arch>` and `rootfs-base-<arch>` per build (debug / direct download)
 
+### Per-arch image table
+
+Each arch ships as the same set of tags on both registries:
+
+| Arch | GHCR (base / bootstrap) | Docker Hub (base / bootstrap) | Mirror |
+|---|---|---|---|
+| `x86_64`  | `ghcr.io/btwiuse/arch:base-x86_64` / `:bootstrap-x86_64` | `btwiuse/arch:base-x86_64` / `:bootstrap-x86_64` | upstream Arch Linux |
+| `i686`    | `ghcr.io/btwiuse/arch:base-i686` / `:bootstrap-i686` | `btwiuse/arch:base-i686` / `:bootstrap-i686` | `mirror.archlinux32.org` |
+| `aarch64` | `ghcr.io/btwiuse/arch:base-aarch64` / `:bootstrap-aarch64` | `btwiuse/arch:base-aarch64` / `:bootstrap-aarch64` | Arch Linux ARM |
+| `riscv64` | `ghcr.io/btwiuse/arch:base-riscv64` / `:bootstrap-riscv64` | `btwiuse/arch:base-riscv64` / `:bootstrap-riscv64` | `riscv.mirror.pkgbuild.com` |
+
+The multi-arch manifest lists `:base` and `:latest` on each registry resolve to whichever per-arch image matches the host platform.
+
 The 3-stage pipeline is unchanged:
 * **stage1** bootstraps a minimal rootfs via `pacstrap` and imports it as `bootstrap-<arch>`
 * **stage2** runs inside that container to install packages and create users
@@ -80,14 +93,16 @@ When `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` are not set, the aggregate step em
 
 | Command | What it does |
 |---|---|
-| `./init` | One-time local setup: git config, pull bootstrap image. Not used by CI. |
+| `./init` | One-time local setup on an Arch host: set git identity, clone the `qemu-static` helper repo, pull `btwiuse/arch:base-x86_64`. CI does not use this; the GitHub Actions runner ships its own tooling. |
 | `./archs` | Prints active architectures (one per line); pipe to a build loop locally. |
-| `./archs \| xargs -L1 -I% env ARCH=% ./docker-build` | Local build all active arches serially. |
-| `ARCH=x86_64 VARIANT=base ./docker-build` | Local build a specific arch + variant. |
-| `ARCH=x86_64 ./packages base` | Print package list for a variant (no side effects). |
-| `./pull` | Pull existing bootstrap images from Docker Hub (local development). |
+| `make build ARCH=<arch> VARIANT=<variant>` | Local single-arch build. Equivalent to `ARCH=<arch> VARIANT=<variant> ./.github/scripts/driver.sh`. Requires `pacstrap` on PATH. |
+| `make ci-build` | Convenience target used by `.github/workflows/build.yml`. Same as `make build`. |
+| `make push-images ARCH=<arch> IMAGE=<repo>` | Push the per-arch `:bootstrap-<arch>` and `:base-<arch>` tags. Used by the workflow's GHCR push step. |
+| `ARCH=x86_64 ./packages base` | Print the package list that a variant installs (no side effects). |
+| `./pull` | Local dev helper: `docker pull` the bootstrap image for each active arch. CI does not use it. |
 | `./push` | Manual push and multi-arch manifest assembly for Docker Hub. The CI `aggregate` job supersedes this; the script is kept for parity and ad-hoc use. Reads `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` from the environment. |
-| `./update` | Update an existing `btwiuse/arch:stable` container in-place (legacy). |
+| `./docker-build` | Local build entry point. Now a thin shim that exports `IMAGE`/`TARBALL_DIR`/`PKGDIR` and execs `.github/scripts/driver.sh`. The legacy `hooks/build` (which launched a `btwiuse/arch:docker-x86_64` helper image to run `./stages`) is replaced. |
+| `./update` | Update an existing `btwiuse/arch:stable` container in-place. Legacy, predates the current build pipeline. |
 
 CI runs on every push that touches the build paths (`.github/workflows/**`, `pkgs/**`, `rootfs/**`, `stages`, `packages`, `push`, `pull`, `keyrings`, `users`, `groups`, `exclude`, `archs`).
 
