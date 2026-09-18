@@ -51,17 +51,15 @@ jobs:
 
       - name: Compute pacman cache key
         id: pkg-hash
-        env:
-          BOOTSTRAP_CONF: ${{ matrix.bootstrap_conf }}
         run: |
           echo "hash=$(cat pkgs/common/keyring pkgs/common/base pkgs/archlinux-bootstrap-packages \
-            rootfs/etc/pacman-bootstrap-"${BOOTSTRAP_CONF}" \
+            rootfs/etc/pacman-bootstrap-${{ matrix.bootstrap_conf }} \
             | sha256sum | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache pacman packages between runs
         uses: actions/cache@v4
         with:
-          path: ${{ env.PKGDIR }}
+          path: ~/.cache/pacman/pkg
           key: pacman-${{ matrix.arch }}-${{ steps.pkg-hash.outputs.hash }}
           restore-keys: |
             pacman-${{ matrix.arch }}-
