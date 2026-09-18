@@ -325,3 +325,76 @@ jobs:
             echo "::notice::DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; skipping Docker Hub publish"
           fi
 
+  # ----------------------------------------------------------------------
+  # Final aggregation check: verify that every per-arch build ended up
+  # both as a rootfs tarball on the GitHub Release and as a manifest
+  # entry in the ghcr.io multi-arch tag. Reports missing arches as
+  # ::warning so partial successes (e.g. one arch's upstream mirror
+  # went down) still surface visibly without failing the workflow.
+  # ----------------------------------------------------------------------
+  aggregate:
+    name: aggregate -> verify multi-arch publish
+    needs: [bootstrap, manifest]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify release + multi-arch manifest completeness
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          SHORT_SHA: ${{ github.sha }}
+        run: |
+          set +e
+          short="${SHORT_SHA:0:7}"
+          case "${EVENT_NAME}" in
+            push)
+              if [[ "${GITHUB_REF_TYPE:-}" == "tag" || "${REF_NAME}" =~ ^v?[0-9] ]]; then
+                TAG="${REF_NAME}"
+              else
+                TAG="rootfs-${short}"
+              fi
+              ;;
+            workflow_dispatch)
+              TAG="manual-${short}"
+              ;;
+            *)
+              echo "::error::unsupported event ${EVENT_NAME}"; exit 1;;
+          esac
+
+          ARCHES=(x86_64 i686 aarch64 riscv64)
+          EXPECTED_TARBALLS=()
+          for a in "${ARCHES[@]}"; do
+            EXPECTED_TARBALLS+=("archlinux-base-${a}.tar.gz")
+          done
+
+          echo "===== release: ${TAG} ====="
+          if ! gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::warning::release ${TAG} does not exist yet"
+          else
+            gh release view "${TAG}" --json tagName,assets \
+              --jq '"tag: " + .tagName + "\nassets: " + ([.assets[].name] | join(", "))'
+            for a in "${ARCHES[@]}"; do
+              if ! gh release view "${TAG}" --json assets \
+                  --jq -e --arg n "archlinux-base-${a}.tar.gz" \
+                  '.assets | map(.name) | index($n) != null' >/dev/null 2>&1; then
+                echo "::warning::release ${TAG} is missing archlinux-base-${a}.tar.gz"
+              fi
+            done
+          fi
+
+          echo "===== ghcr manifest: ghcr.io/${OWNER}/arch:base ====="
+          TOKEN=$(curl -fsS -u "${OWNER}:${GH_TOKEN}" \
+            "https://ghcr.io/token?service=ghcr.io&scope=repository:${OWNER}/arch:pull" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])")
+          MANIFEST=$(curl -fsS \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json" \
+            "https://ghcr.io/v2/${OWNER}/arch/manifests/base")
+          echo "$MANIFEST" | python3 "${GITHUB_WORKSPACE}/.github/scripts/verify-manifest.py"
+
