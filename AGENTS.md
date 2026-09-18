@@ -86,7 +86,7 @@ When `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` are not set, the aggregate step em
 | `ARCH=x86_64 VARIANT=base ./docker-build` | Local build a specific arch + variant. |
 | `ARCH=x86_64 ./packages base` | Print package list for a variant (no side effects). |
 | `./pull` | Pull existing bootstrap images from Docker Hub (local development). |
-| `./push` | Manual push and multi-arch manifest assembly for Docker Hub. The CI `aggregate` job supersedes this; the script is kept for parity and ad-hoc use. Requires `docker login`. |
+| `./push` | Manual push and multi-arch manifest assembly for Docker Hub. The CI `aggregate` job supersedes this; the script is kept for parity and ad-hoc use. Reads `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` from the environment. |
 | `./update` | Update an existing `btwiuse/arch:stable` container in-place (legacy). |
 
 CI runs on every push that touches the build paths (`.github/workflows/**`, `pkgs/**`, `rootfs/**`, `stages`, `packages`, `push`, `pull`, `keyrings`, `users`, `groups`, `exclude`, `archs`).
@@ -268,7 +268,7 @@ The `[btwiuse]` repo provides AUR-built packages like `binfmt-qemu-static-all-ar
 - **Docker Hub push is opt-in** via `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets. Without these the workflow still produces GHCR images and rootfs releases.
 - **`./docker-build` runs on an Arch Linux host** (uses `pacstrap`). On Ubuntu it can work via `arch-install-scripts`, but it is no longer the CI entry point — use GitHub Actions instead.
 - **Package cache**: `actions/cache@v4` caches `/home/runner/.cache/pacman/pkg` between runs, keyed per-arch on the SHA-256 of the package-list files (`pkgs/common/keyring`, `pkgs/common/base`, `pkgs/common/base-devel`, `pkgs/common/dev`, `pkgs/common/cmdline`, `pkgs/archlinux-bootstrap-packages`). The earlier `hashFiles` issues with comma-separated globs were avoided by hashing each file in its own `${{ hashFiles(...) }}` expression.
-- **`./push` still has a hardcoded Docker Hub password** in plaintext. CI does not use it. Plan to rotate the token and replace the inline password with a read-from-env or simply delete the script.
+- **`./push` reads `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` from the environment** (token via stdin). It is no longer invoked by CI; the `aggregate` job does the same work, automated. Keep the script for ad-hoc local publishes.
 - **`makepkg.conf`** in `rootfs/etc/` sets build flags for the container environment.
 - **`./squash` and `./update`** are alternative update workflows, not part of the main build pipeline.
 - **`hooks/post_checkout` is removed**. It installed a `k0s` agent and triggered an infinite rebuild loop on Docker Hub automated builds. CI no longer touches it.
