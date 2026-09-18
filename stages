@@ -1,154 +1,21 @@
 #!/usr/bin/env bash
+#
+# ./stages: legacy orchestrator kept for the historical ./docker-build
+# flow (which launches a btwiuse/arch:docker-x86_64 container). All
+# real logic now lives in .github/scripts/*.sh. This file is a thin
+# shim that sets the environment driver.sh expects and execs it.
+#
+# If you are running ./stages directly on an Arch host or in CI,
+# prefer .github/scripts/driver.sh, which is the source of truth.
 
 set -eo pipefail
 
-stage1(){
-  echo "bootstrapping $BOOTSTRAP_IMAGE ..."
+: "${ARCH:?set ARCH (e.g. x86_64, i686, aarch64, riscv64)}"
+: "${VARIANT:=base}"
+: "${PKGDIR:=/var/cache/pacman/pkg}"
 
-  if ! docker inspect $BOOTSTRAP_IMAGE &>/dev/null; then
-    env LC_ALL=C pacstrap -C rootfs/etc/pacman-bootstrap-${ARCH}.conf -c -G -M ${TMPDIR} $(./packages bootstrap)
+IMAGE="btwiuse/arch"
+TARBALL_DIR="dist"
+export IMAGE TARBALL_DIR
 
-    /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
-    --change 'CMD ["/usr/bin/bash"]' \
-    - $BOOTSTRAP_IMAGE
-  else
-  # docker export $(docker create $BOOTSTRAP_IMAGE) | tar -xC ${TMPDIR}
-    true
-  fi
-
-  echo "Your bootstrap image is ready!"
-  echo "$ docker run -it $BOOTSTRAP_IMAGE"
-}
-
-stage2(){
-  docker run -i \
-    --name=${NAME} \
-    -v ${PWD}:/root/arch \
-    -v ${PKGDIR}:/var/cache/pacman/pkg \
-    -e LC_ALL=C \
-    -e VARIANT=${VARIANT} \
-    -e ARCH=${ARCH} \
-    $BOOTSTRAP_IMAGE \
-    bash <<- 'END_OF_STAGE2'
-	#!/usr/bin/env bash
-
-	set -e
-
-	# should be default hook
-	# redundant when ./update
-	gen-locale(){
-	  locale-gen en_US.UTF-8
-	}
-
-	# common to ./update and from-scratch build
-	# todo: https://www.archlinux.org/todo/switch-to-systemd-sysusers/
-	ug(){
-	  # TODO: try chpasswd
-
-	  for user in $(cat users); do
-	    useradd -U -ms /bin/bash ${user} && passwd -d ${user}
-	  done
-
-	  for group in $(cat groups); do
-	    groupadd -f ${group}
-	    for user in $(cat users); do
-	      usermod -a -G ${group} ${user}
-	    done
-	  done
-
-          mkdir -p /etc/sudoers.d
-	  echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
-	}
-
-	# should be default hook
-	# redundant when ./update
-	setup-keyring(){
-	  # pacman-key --init && pacman-key --populate archlinux blackarch
-	  # x86
-	  pacman-key --init && pacman-key --populate $(./keyrings)
-	}
-
-	# should be default hook
-	update-packages(){
-	# mainly used to update existing packages when you run ./update
-	# redundant when you build from scratch
-	# --cachedir=/root/arch/cache-${ARCH} 
-	./packages ${VARIANT} | xargs pacman -Syu --needed --noconfirm --overwrite '/*'
-	# should be default hook
-	# redundant when ./update
-	# pkgfile --update
-	}
-
-	stage2(){
-	  # chroot defaults to /
-	  cd /root/arch
-
-	  # 0x01
-	  # custom configurations
-	  cp --recursive --preserve=timestamps --backup --suffix=.pacold rootfs/* /
-	  ln -sf pacman-${ARCH}.conf /etc/pacman.conf
-
-	  # order matters here, you need sudo installed to setup sudoers...
-	  update-packages
-	  gen-locale
-	  ug
-	  # setup-keyring
-	}
-
-	stage2 "$@"
-END_OF_STAGE2
-}
-
-stage3(){
-  IMAGE=btwiuse/arch:${VARIANT}-${ARCH}
-  echo "building $IMAGE ..."
-
-  docker commit \
-  --change 'CMD ["/usr/bin/bash"]' \
-  --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en' \
-  $NAME $IMAGE
-
-# /bin/time -f '%e' -- tar --numeric-owner --xattrs --acls --exclude-from=exclude -C ${TMPDIR} -c . | docker import \
-# --change 'CMD ["/usr/bin/bash"]' \
-# - $IMAGE
-# --change 'ENV TERM=screen' \
-# --change 'ENV TZ=Asia/Shanghai' \
-# --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en' \
-# --change 'USER btwiuse' \
-# --change 'WORKDIR /home/btwiuse' \
-  echo "Your image is ready!"
-  echo "$ docker run -it $IMAGE"
-}
-
-main(){
-  TMPDIR=$(mktemp -d)
-
-  NAME=$(echo ${TMPDIR} | cut -d . -f 2 | tr '[:upper:]' '[:lower:]')
-
-  BOOTSTRAP_IMAGE=btwiuse/arch:bootstrap-${ARCH}
-
-  # 0x00
-  # from scratch
-  if [[ -z $ARCH ]]; then exit 1; fi
-  printf 'Bootstrapping btwiuse/arch:bootstrap-%s\n' "$ARCH"
-  stage1 |& ts -s "stage1]"
-
-  # 0x02
-  # idea: manage personal configs with package hooks, like locale-en_xx
-  # managing arch linux with meta packages
-  # https://disconnected.systems/blog/archlinux-meta-packages/    -> btw the theme is great for cheat.sh frontend!!!
-  # meta package name: btwiuse
-  # may be make store some ebooks ...
-  # classic ebooks ...
-  stage2 |& ts -s "stage2]"
-
-  # 0x03
-  # docker import
-  stage3 |& ts -s "stage3]"
-
-  # 0x04
-  # cleanup
-  rm -rf ${TMPDIR}
-}
-
-main "$@" |& ts -s "%M:%S [${ARCH}:"
+exec bash "$(dirname "$0")/.github/scripts/driver.sh"

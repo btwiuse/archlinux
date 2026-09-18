@@ -1,43 +1,20 @@
 #!/usr/bin/env bash
+#
+# Local build entry point. CI does not use this; .github/workflows/build.yml
+# runs .github/scripts/driver.sh directly on an Ubuntu runner with Docker.
+#
+# This wrapper computes the same environment driver.sh expects and
+# execs it from the repo root, so a single source of truth drives
+# both local and CI builds.
 
-is_stdin_a_tty(){ [[ -t 0 ]] ;}
+set -eo pipefail
 
-update_docker_image(){
-  sudo=sudo
-  if [[ $(whoami) = root ]]; then
-    sudo=""
-  fi
+: "${ARCH:=$(uname -m)}"
+: "${VARIANT:=base}"
 
-  # if host_arch == guest_arch == amd64 && host.is_arch()
-  if [[ $(uname -m) = "${ARCH:=$(uname -m)}" ]] && [[ -d /var/cache/pacman/pkg ]]; then
-    PKGDIR=/var/cache/pacman/pkg
-  else
-    PKGDIR="$PWD/cache-${ARCH}"
-  fi
+IMAGE="btwiuse/arch"
+TARBALL_DIR="dist"
+PKGDIR="${PKGDIR:-$HOME/.cache/pacman/pkg}"
+export IMAGE TARBALL_DIR PKGDIR
 
-# -v $PWD/rootfs/etc/pacman.d/mirrorlist:/etc/pacman.d/mirrorlist \
-# -v $PWD/rootfs/etc/pacman.conf:/etc/pacman.conf \
-  $sudo docker \
-  run "$([[ -t 0 ]] && echo -it)" \
-  -u root \
-  -v "$PWD:$PWD" \
-  -e "ARCH=${ARCH}" \
-  -e "PKGDIR=${PKGDIR}" \
-  -e "DOCKER_API_VERSION=1.44" \
-  -e "VARIANT=${VARIANT:-base}" \
-  -w "$PWD" \
-  -v /var/run:/var/run \
-  -v "${PKGDIR}:/var/cache/pacman/pkg" \
-  --privileged \
-  --net=host \
-  btwiuse/arch:docker-x86_64 \
-  ./stages
-}
-
-main(){
-  echo "------ HOOK START - BUILD -------"
-  update_docker_image
-  echo "------ HOOK END - BUILD -------"
-}
-
-main "$@"
+bash "$(dirname "$0")/.github/scripts/driver.sh"

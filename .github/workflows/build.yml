@@ -76,108 +76,14 @@ jobs:
         if: ${{ matrix.qemu }}
         uses: docker/setup-qemu-action@v3
 
-      - name: "stage1: pacstrap + tar.gz + docker import"
-        env:
-          ARCH: ${{ matrix.arch }}
-          BOOTSTRAP_CONF: ${{ matrix.bootstrap_conf }}
-        run: |
-          set -euo pipefail
-          OWNER="${{ github.repository_owner }}"
-          IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
-          TARBALL="dist/archlinux-bootstrap-${ARCH}.tar.gz"
-          TMPDIR=$(mktemp -d)
-          export PKGDIR="${PKGDIR}"
-          mkdir -p "$PKGDIR" dist
-          sudo -E pacstrap -C "rootfs/etc/${BOOTSTRAP_CONF}" -c -G -M "$TMPDIR" $(./packages bootstrap)
-          # Produce a gzip-compressed rootfs tarball for downstream consumers.
-          # The same exclude rules that feed `docker import` apply here, so
-          # the tarball is a faithful on-disk representation of the image.
-          sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -czf "$TARBALL" .
-          # docker import consumes an uncompressed tar stream; pipe via gunzip.
-          sudo tar --numeric-owner --xattrs --acls --exclude-from=exclude -C "$TMPDIR" -c . \
-              | docker import \
-                  --change 'CMD ["/usr/bin/bash"]' \
-                  - "$IMAGE"
-          sudo rm -rf "$TMPDIR"
-          ls -la "$TARBALL"
-          docker images "$IMAGE"
-
-      - name: "stage2: docker run bootstrap -> install packages + create users"
+      - name: "stage1+2+3: pacstrap -> install packages -> commit + export"
         env:
           ARCH: ${{ matrix.arch }}
           VARIANT: base
-        run: |
-          set -euo pipefail
-          OWNER="${{ github.repository_owner }}"
-          BOOTSTRAP_IMAGE="ghcr.io/${OWNER}/arch:bootstrap-${ARCH}"
-          mkdir -p "${PKGDIR}"
-          CONTAINER_NAME="stage2-${ARCH}-$(mktemp -u XXXXXXXX | tr '[:upper:]' '[:lower:]')"
-          docker run -i \
-              --name "$CONTAINER_NAME" \
-              -v "$PWD:/root/arch" \
-              -v "${PKGDIR}:/var/cache/pacman/pkg" \
-              -e LC_ALL=C \
-              -e VARIANT="${VARIANT}" \
-              -e ARCH="${ARCH}" \
-              "$BOOTSTRAP_IMAGE" bash <<-'END_OF_STAGE2'
-          #!/usr/bin/env bash
-          set -e
-          gen-locale(){ locale-gen en_US.UTF-8; }
-          ug(){
-            for user in $(cat users); do
-              useradd -U -ms /bin/bash ${user} && passwd -d ${user}
-            done
-            for group in $(cat groups); do
-              groupadd -f ${group}
-              for user in $(cat users); do
-                usermod -a -G ${group} ${user}
-              done
-            done
-            mkdir -p /etc/sudoers.d
-            echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
-          }
-          update-packages(){
-            ./packages ${VARIANT} | xargs pacman -Syu --needed --noconfirm --overwrite '/*'
-          }
-          cd /root/arch
-          cp --recursive --preserve=timestamps --backup --suffix=.pacold rootfs/* /
-          ln -sf pacman-${ARCH}.conf /etc/pacman.conf
-          update-packages
-          gen-locale
-          ug
-          END_OF_STAGE2
-
-      - name: "stage3: docker commit"
-        env:
-          ARCH: ${{ matrix.arch }}
-          VARIANT: base
-        run: |
-          set -euo pipefail
-          OWNER="${{ github.repository_owner }}"
-          CONTAINER_ID=$(docker ps -aq --filter "name=stage2-${ARCH}-" | head -1)
-          if [[ -z "$CONTAINER_ID" ]]; then
-            echo "::error::no stage2 container for arch ${ARCH}"
-            docker ps -a
-            exit 1
-          fi
-          IMAGE="ghcr.io/${OWNER}/arch:${VARIANT}-${ARCH}"
-          docker commit \
-              --change 'CMD ["/usr/bin/bash"]' \
-              --change 'ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US:en' \
-              "$CONTAINER_ID" "$IMAGE"
-          docker rm "$CONTAINER_ID"
-          docker images "$IMAGE"
-          # Export the committed base image's filesystem as a rootfs
-          # tarball. `docker export` returns a flat tar of the merged
-          # filesystem (no layer metadata), gzip-compressed to match the
-          # bootstrap tarball's format. The resulting tarball is a
-          # drop-in for `docker import` and can be extracted directly
-          # as a chroot.
-          BASE_TARBALL="dist/archlinux-base-${ARCH}.tar.gz"
-          EXPORTER=$(docker create "$IMAGE")
-          sudo docker export "$EXPORTER" | sudo gzip > "$BASE_TARBALL"
-          docker rm "$EXPORTER"
-          ls -la dist/
+          IMAGE: ghcr.io/${{ github.repository_owner }}/arch
+          PKGDIR: /home/runner/.cache/pacman/pkg
+          TARBALL_DIR: dist
+        run: bash .github/scripts/driver.sh
 
       - name: Login to GHCR
         uses: docker/login-action@v3
