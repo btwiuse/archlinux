@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /home/runner/.cache/pacman/pkg
-          key: pacman-${{ matrix.arch }}-${{ hashFiles('pkgs/common/keyring') }}
+          key: pacman-${{ matrix.arch }}-${{ hashFiles('pkgs/common/keyring') }}-${{ hashFiles('pkgs/common/base') }}-${{ hashFiles('pkgs/common/base-devel') }}-${{ hashFiles('pkgs/common/dev') }}-${{ hashFiles('pkgs/common/cmdline') }}-${{ hashFiles('pkgs/archlinux-bootstrap-packages') }}
           restore-keys: |
             pacman-${{ matrix.arch }}-
 

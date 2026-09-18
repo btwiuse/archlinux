@@ -9,8 +9,8 @@ This repository builds multi-arch Arch Linux Docker base images for `x86_64`, `i
 Published destinations:
 * **Docker Hub** — `btwiuse/arch:{base,latest,base-<arch>,bootstrap-<arch>}`
 * **GitHub Container Registry** — `ghcr.io/btwiuse/arch:{base,latest,base-<arch>,bootstrap-<arch>}`
-* **GitHub Releases** — `rootfs-<short-sha>` with one `archlinux-base-<arch>.tar.gz` per arch
-* **GitHub Actions artifacts** — `rootfs-<arch>` per build (debug / direct download)
+* **GitHub Releases** — `rootfs-<short-sha>` with both `archlinux-bootstrap-<arch>.tar.gz` and `archlinux-base-<arch>.tar.gz` per arch
+* **GitHub Actions artifacts** — `rootfs-bootstrap-<arch>` and `rootfs-base-<arch>` per build (debug / direct download)
 
 The 3-stage pipeline is unchanged:
 * **stage1** bootstraps a minimal rootfs via `pacstrap` and imports it as `bootstrap-<arch>`
@@ -36,8 +36,11 @@ push / tag / workflow_dispatch
  │   4. stage2: docker run bootstrap, install pkgs, add users     │
  │   5. stage3: docker commit → :base-$A                          │
  │   6. push both :bootstrap-$A and :base-$A to GHCR               │
- │   7. upload-artifact dist/archlinux-base-$A.tar.gz              │
- │   8. publish tarball to GitHub Releases (concurrent, see below) │
+ │   6. push both :bootstrap-$A and :base-$A to GHCR               │
+ │   7. upload-artifact dist/archlinux-bootstrap-$A.tar.gz         │
+ │   7b. stage3: docker commit -> docker export -> gzip ->         │
+ │       dist/archlinux-base-$A.tar.gz (uploaded as artifact too)  │
+ │   8. publish both tarballs to GitHub Releases (concurrent)      │
  └─────────────────────────────────────────────────────────────────┘
         │
         ▼
@@ -57,8 +60,8 @@ push / tag / workflow_dispatch
 
 ### Concurrency model
 
-* The four bootstrap jobs run in parallel; each is responsible for its own arch's `:base-<arch>` image and its own rootfs tarball.
-* Each bootstrap job publishes its tarball directly to the GitHub Release tagged `rootfs-<short-sha>` (or the tag name on a tag push). The first job to find the release missing creates it; the rest fall through to `gh release upload --clobber` with their own tarball. This avoids cross-job artifact transfer and serial waiting on a release job.
+* The four bootstrap jobs run in parallel; each is responsible for its own arch's `:base-<arch>` image and **two** rootfs tarballs (`archlinux-bootstrap-<arch>.tar.gz` from stage1, `archlinux-base-<arch>.tar.gz` from stage3's `docker export | gzip`).
+* Each bootstrap job publishes both tarballs directly to the GitHub Release tagged `rootfs-<short-sha>` (or the tag name on a tag push). The first job to find the release missing creates it; the rest fall through to `gh release upload --clobber` with their own tarballs. This avoids cross-job artifact transfer and serial waiting on a release job.
 * `aggregate` runs after all four bootstrap jobs finish. It pulls the per-arch images, assembles the multi-arch list, pushes to GHCR and Docker Hub, then verifies completeness.
 
 ### Required secrets
@@ -211,29 +214,38 @@ Current groups: `wheel`, `video`, `audio`, `vboxusers`, `plugdev`, `docker`, `li
 
 ## Rootfs Tarball Releases
 
-For every CI run on `master`, the workflow creates a GitHub Release `rootfs-<short-sha>` with one tarball per arch (`archlinux-base-x86_64.tar.gz`, `archlinux-base-i686.tar.gz`, `archlinux-base-aarch64.tar.gz`, `archlinux-base-riscv64.tar.gz`). Tag pushes (e.g. `v20240917`) reuse the tag name as the release tag.
+For every CI run on `master`, the workflow creates a GitHub Release `rootfs-<short-sha>` with **eight** tarballs per arch — a bootstrap tarball (stage1, the raw pacstrap output) and a base tarball (stage3, the committed image's filesystem flattened by `docker export | gzip`).
 
-Each tarball is gzip-compressed and uses the same `exclude` rules as `docker import`, so it is a faithful on-disk representation of the `:bootstrap-$ARCH` image.
+| File | Source | Format |
+|---|---|---|
+| `archlinux-bootstrap-<arch>.tar.gz` | stage1: `sudo tar --exclude-from=exclude -C "$TMPDIR" -czf …` | faithful rootfs of `:bootstrap-<arch>`, same `exclude` rules as `docker import` |
+| `archlinux-base-<arch>.tar.gz`      | stage3: `docker export $(docker create "$IMAGE") \| gzip` | flattened filesystem of `:base-<arch>` (committed image, with users/locale/sudoers) |
+
+Tag pushes (e.g. `v20240917`) reuse the tag name as the release tag.
 
 Consumers:
 ```
-# stream straight into docker import
+# bootstrap: a faithful pacstrap output, drop-in for `docker import`
+curl -L https://github.com/btwiuse/archlinux/releases/download/rootfs-abc1234/archlinux-bootstrap-x86_64.tar.gz \
+  | docker import - btwiuse/arch:bootstrap-local
+
+# base: a pre-installed rootfs with the user/locale/sudoers setup
 curl -L https://github.com/btwiuse/archlinux/releases/download/rootfs-abc1234/archlinux-base-x86_64.tar.gz \
-  | docker import - btwiuse/arch:local
+  | docker import - btwiuse/arch:base-local
 
 # or extract as a chroot
-tar -xzf archlinux-base-x86_64.tar.gz -C /var/lib/mychroot
+tar -xzf archlinux-bootstrap-x86_64.tar.gz -C /var/lib/mychroot
 ```
 
 ---
 
 ## Exclude List
 
-`exclude` lists paths omitted from the tar in stage1 (secrets, caches, runtime state):
+`exclude` lists paths omitted from the stage1 tar (secrets, caches, runtime state):
 - `etc/pacman.d/gnupg/` keys and sockets
 - `root/*`, `tmp/*`, `var/cache/pacman/pkg/*`, `var/lib/pacman/sync/*`, `var/tmp/*`
 
-The same file is used for both the bootstrap `docker import` and the rootfs tarball, so they stay in sync.
+This file is only applied to the **bootstrap** tarball (stage1). The **base** tarball is produced by `docker export | gzip` of the committed image, which preserves the full filesystem state at commit time — including the keys/sockets that stage1 strips out, because those are created later by pacman during stage2.
 
 ---
 
@@ -255,7 +267,7 @@ The `[btwiuse]` repo provides AUR-built packages like `binfmt-qemu-static-all-ar
 - **Bootstrap image reuse**: stage1 always rebuilds from scratch — there is no incremental reuse. The Docker Hub automated-build bootstrap-skip behaviour is gone.
 - **Docker Hub push is opt-in** via `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets. Without these the workflow still produces GHCR images and rootfs releases.
 - **`./docker-build` runs on an Arch Linux host** (uses `pacstrap`). On Ubuntu it can work via `arch-install-scripts`, but it is no longer the CI entry point — use GitHub Actions instead.
-- **Package cache**: `actions/cache` is **not currently used** (the `hashFiles` interaction had bugs in earlier iterations). The runner's `~/.cache/pacman/pkg` is populated per-job but is not shared across runs. Adding persistent caching is a future improvement.
+- **Package cache**: `actions/cache@v4` caches `/home/runner/.cache/pacman/pkg` between runs, keyed per-arch on the SHA-256 of the package-list files (`pkgs/common/keyring`, `pkgs/common/base`, `pkgs/common/base-devel`, `pkgs/common/dev`, `pkgs/common/cmdline`, `pkgs/archlinux-bootstrap-packages`). The earlier `hashFiles` issues with comma-separated globs were avoided by hashing each file in its own `${{ hashFiles(...) }}` expression.
 - **`./push` still has a hardcoded Docker Hub password** in plaintext. CI does not use it. Plan to rotate the token and replace the inline password with a read-from-env or simply delete the script.
 - **`makepkg.conf`** in `rootfs/etc/` sets build flags for the container environment.
 - **`./squash` and `./update`** are alternative update workflows, not part of the main build pipeline.
