@@ -1,26 +1,49 @@
 #!/usr/bin/env bash
+#
+# Push per-arch images for a tag, then build the multi-arch manifest
+# list and push it. Reads DOCKERHUB_USERNAME / DOCKERHUB_TOKEN from the
+# environment, e.g.
+#
+#   DOCKERHUB_USERNAME=btwiuse \
+#   DOCKERHUB_TOKEN=... \
+#   ./push
+#
+# In CI this script is superseded by .github/workflows/build.yml's
+# aggregate job, which produces the same set of tags and manifest
+# lists automatically. This file is kept for ad-hoc local use and as
+# the canonical reference for what the aggregate job publishes.
 
-docker login -u btwiuse -p d40cb888-6a3f-4603-974f-8e3b9ef9daca
+set -euo pipefail
+
+: "${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME}"
+: "${DOCKERHUB_TOKEN:?set DOCKERHUB_TOKEN}"
+
+# Feed the token via stdin so it never lands in argv / shell history.
+printf '%s' "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+
+ARCHES=(x86_64 i686 aarch64 riscv64)
 
 push_tag(){
   TAG="$1"
   TARGET="${2:-$TAG}"
-  docker push btwiuse/arch:$TAG-x86_64
-  docker push btwiuse/arch:$TAG-i686
-  docker push btwiuse/arch:$TAG-aarch64
+  for a in "${ARCHES[@]}"; do
+    docker push "btwiuse/arch:$TAG-$a"
+  done
 
-  docker manifest create \
-	    btwiuse/arch:$TARGET \
-    --amend btwiuse/arch:$TAG-x86_64 \
-    --amend btwiuse/arch:$TAG-i686 \
-    --amend btwiuse/arch:$TAG-aarch64
+  amends=()
+  annotates=()
+  declare -A os_arch=( [x86_64]="amd64" [i686]="386" [aarch64]="arm64" [riscv64]="riscv64" )
+  for a in "${ARCHES[@]}"; do
+    amends+=( --amend "btwiuse/arch:$TAG-$a" )
+  done
+  docker manifest create "btwiuse/arch:$TARGET" "${amends[@]}"
+  for a in "${ARCHES[@]}"; do
+    args=( --os linux --arch "${os_arch[$a]}" )
+    if [[ "$a" == aarch64 ]]; then args+=( --variant v8 ); fi
+    docker manifest annotate "${args[@]}" "btwiuse/arch:$TARGET" "btwiuse/arch:$TAG-$a"
+  done
 
-  docker manifest annotate --os linux --arch amd64 btwiuse/arch:$TARGET btwiuse/arch:$TAG-x86_64
-  docker manifest annotate --os linux --arch 386 btwiuse/arch:$TARGET btwiuse/arch:$TAG-i686
-  docker manifest annotate --os linux --arch arm64 --variant v8 btwiuse/arch:$TARGET btwiuse/arch:$TAG-aarch64
-
-  docker manifest push \
-	    btwiuse/arch:$TARGET
+  docker manifest push "btwiuse/arch:$TARGET"
 }
 
 push_tag bootstrap
